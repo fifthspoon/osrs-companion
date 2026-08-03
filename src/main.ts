@@ -5,6 +5,7 @@ import type { Store } from "./store";
 import { render as renderDailies } from "./ui";
 import { render as renderRoute } from "./routeview";
 import { ROUTES } from "./routes";
+import * as fightview from "./fightview";
 import { requestPermission, fire, clear } from "./notify";
 
 const root = document.getElementById("app") as HTMLElement;
@@ -59,6 +60,7 @@ function tabBar(): HTMLElement {
   const items: [Tab, string][] = [
     ["dailies", "Dailies"],
     ...ROUTES.map((r) => [r.id, r.name] as [Tab, string]),
+    ["fight", "Fire cape"],
   ];
   for (const [id, label] of items) {
     const b = document.createElement("button");
@@ -71,6 +73,10 @@ function tabBar(): HTMLElement {
 }
 
 function draw() {
+  // The fight tab runs an animation loop and a window key listener, so it has
+  // to be shut down before its DOM is thrown away. Safe no-op otherwise.
+  fightview.stop();
+
   root.innerHTML = "";
   root.appendChild(tabBar());
   const body = document.createElement("div");
@@ -79,6 +85,8 @@ function draw() {
 
   if (tab === "dailies") {
     renderDailies(body, store, Date.now(), handlers);
+  } else if (tab === "fight") {
+    body.appendChild(fightview.render());
   } else {
     const route = ROUTES.find((r) => r.id === tab);
     if (route) body.appendChild(renderRoute(route, draw));

@@ -429,3 +429,168 @@ select.minisel {
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: 4px;
 }
+
+/* --- Fight Caves trainer --- */
+/* Ported from the standalone tick trainer. Its palette was already all but
+   identical to this app's, so the hardcoded hexes are swapped for the shared
+   variables and the layout is restacked: the trainer put guide | canvas |
+   loadout in one row at a fixed width. Here the canvas sits on top with the
+   two panels side by side underneath, so it reflows with the container.
+   No width override needed, #app is already 1180px for the map. */
+
+.fightwrap { display: flex; flex-direction: column; gap: 10px; }
+
+.fightkeys { margin-top: 0; }
+
+#game {
+  width: 100%;
+  max-width: 900px;
+  height: auto;
+  align-self: center;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  image-rendering: pixelated;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.6);
+  touch-action: none;
+}
+
+.fightcols {
+  display: grid;
+  grid-template-columns: minmax(240px, 1fr) minmax(280px, 1.3fr);
+  gap: 12px;
+  align-items: start;
+}
+
+.settings,
+.guide {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+}
+
+.settings { gap: 8px; }
+
+.guide {
+  max-height: 420px;
+  overflow: hidden;
+}
+
+.settings h2,
+.guide h2 {
+  font-size: 15px;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+
+.guide h2 { margin-bottom: 8px; }
+
+.settings label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  color: #b8ad92;
+  gap: 8px;
+}
+
+.settings input,
+.settings select {
+  width: 96px;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 3px 6px;
+  font-size: 12px;
+}
+
+.settings .preview {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-top: 6px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+  font-size: 12px;
+  color: #b8ad92;
+}
+
+.settings .preview b { color: var(--go-bright); }
+
+.settings button {
+  margin-top: 8px;
+  background: var(--go);
+  color: #0e1409;
+  border: none;
+  border-radius: 4px;
+  padding: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.settings button:hover { background: var(--go-bright); }
+
+.settings .hint {
+  font-size: 11px;
+  color: var(--dim);
+  line-height: 1.4;
+}
+
+.guide-tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.guide-tabs button {
+  flex: 1;
+  background: var(--bg);
+  color: #b8ad92;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 5px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.guide-tabs button.active {
+  background: var(--go);
+  color: #0e1409;
+  border-color: var(--go);
+}
+
+.guide-body {
+  overflow-y: auto;
+  padding-right: 6px;
+}
+
+.guide-body h3 {
+  font-size: 12px;
+  color: #ffaa44;
+  margin: 10px 0 4px;
+}
+
+.guide-body ul {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.guide-body li {
+  font-size: 11.5px;
+  color: #b8ad92;
+  line-height: 1.35;
+  white-space: pre-wrap;
+}
+
+.guide-body li.spacer { height: 5px; }
+
+@media (max-width: 700px) {
+  .fightcols { grid-template-columns: 1fr; }
+}
