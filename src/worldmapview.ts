@@ -70,6 +70,20 @@ function cleanName(n: string): string {
   return n.replace(/\s*\((location|island|area|region|surface)\)\s*$/i, "");
 }
 
+// How big labels render, as a multiplier on their CSS font size.
+//
+// The obvious counter-scale (1/zoom) pins labels to a constant screen size at
+// every zoom, which sounds correct and reads badly: zoomed right in the terrain
+// is at 16 px per game square and the names are still 10 px, so they look tiny
+// against everything around them.
+//
+// So let them grow with zoom, but clamped hard at both ends. The floor stops
+// them ever becoming unreadable, the ceiling stops them swamping the map. Cube
+// root because linear growth is far too aggressive across a 60x zoom range.
+function labelScale(perSquare: number): number {
+  return Math.min(2.2, Math.max(1, Math.cbrt(Math.max(perSquare, 0.01)) * 0.75));
+}
+
 // Labels are text, so they are only worth drawing once the map is big enough to
 // read them against. Thresholds are in screen pixels per game square.
 function tierForZoom(perSquare: number): number {
@@ -289,8 +303,9 @@ export function render(route: RouteDef, ctx: ViewCtx, rerender: () => void): HTM
       return;
     }
 
-    const maxTier = tierForZoom(zoom * PX_PER_SQUARE);
-    const inv = 1 / zoom;
+    const perSquare = zoom * PX_PER_SQUARE;
+    const maxTier = tierForZoom(perSquare);
+    const inv = labelScale(perSquare) / zoom;
     const x0 = -offX / zoom;
     const y0 = -offY / zoom;
     const x1 = (r.width - offX) / zoom;

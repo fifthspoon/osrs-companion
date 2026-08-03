@@ -323,11 +323,13 @@ ol.stops li.visited .stopname { text-decoration: line-through; }
   letter-spacing: 0.02em;
 }
 
-/* Size by importance, so a capital reads as more than a windmill. */
+/* Size by importance, so a capital reads as more than a windmill. These are
+   base sizes: labelScale() multiplies them by up to 2.2 as you zoom in. The
+   spread stays modest because the tiers already differ by when they appear. */
 .wmlabel.t0 { font-size: 15px; }
 .wmlabel.t1 { font-size: 13px; }
-.wmlabel.t2 { font-size: 11px; opacity: 0.92; }
-.wmlabel.t3 { font-size: 10px; opacity: 0.82; font-weight: 500; }
+.wmlabel.t2 { font-size: 12px; opacity: 0.94; }
+.wmlabel.t3 { font-size: 11px; opacity: 0.88; }
 
 .wmlines { position: absolute; top: 0; left: 0; pointer-events: none; }
 
