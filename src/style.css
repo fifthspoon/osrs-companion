@@ -1,0 +1,429 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg: #14120e;
+  --panel: #1e1b15;
+  --line: #332e23;
+  --text: #e8dcc0;
+  --dim: #8a8272;
+  --go: #5c9c3e;
+  --go-bright: #7bc455;
+}
+
+html, body {
+  min-height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Segoe UI", system-ui, sans-serif;
+}
+
+body {
+  display: flex;
+  justify-content: center;
+  padding: 28px 16px 60px;
+}
+
+#app {
+  width: 100%;
+  max-width: 520px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+header h1 { font-size: 19px; letter-spacing: 0.2px; }
+
+.sub {
+  font-size: 12.5px;
+  color: var(--dim);
+  margin-top: 3px;
+}
+
+.sub.warn { color: #c88a4a; }
+
+.notify-cta {
+  margin-top: 10px;
+  background: transparent;
+  color: var(--go-bright);
+  border: 1px solid var(--go);
+  border-radius: 6px;
+  padding: 7px 12px;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+
+.notify-cta:hover { background: rgba(92, 156, 62, 0.12); }
+
+section { display: flex; flex-direction: column; gap: 8px; }
+
+section h2 {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1.1px;
+  color: var(--dim);
+  font-weight: 600;
+}
+
+/* Ready tasks are the only loud thing on the page. */
+.card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 16px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.card.ready {
+  border-color: var(--go);
+  background: linear-gradient(180deg, rgba(92, 156, 62, 0.09), transparent);
+}
+
+.card.idle { color: var(--dim); display: block; }
+
+.card .name { font-size: 16px; font-weight: 600; }
+.card.idle .name { font-size: 14px; font-weight: 500; }
+
+.note {
+  font-size: 11.5px;
+  color: var(--dim);
+  margin-top: 3px;
+  line-height: 1.4;
+}
+
+button.done {
+  background: var(--go);
+  color: #0e1409;
+  border: none;
+  border-radius: 6px;
+  padding: 10px 20px;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+button.done:hover { background: var(--go-bright); }
+
+/* Waiting rows are deliberately quiet. no red, no "overdue", no guilt. */
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 4px;
+  border-bottom: 1px solid var(--line);
+  font-size: 13.5px;
+  color: var(--dim);
+}
+
+.row:last-child { border-bottom: none; }
+.row .right { display: flex; align-items: center; gap: 10px; }
+.row .timer { font-variant-numeric: tabular-nums; font-size: 12.5px; }
+
+button.undo {
+  background: none;
+  border: none;
+  color: #5f5949;
+  font-size: 11px;
+  cursor: pointer;
+  padding: 2px 4px;
+  opacity: 0;
+  transition: opacity 0.12s;
+}
+
+.row:hover button.undo { opacity: 1; }
+button.undo:hover { color: var(--text); }
+
+.picker {
+  border-top: 1px solid var(--line);
+  padding-top: 14px;
+}
+
+.picker summary {
+  font-size: 12.5px;
+  color: var(--dim);
+  cursor: pointer;
+  list-style: none;
+}
+
+.picker summary::-webkit-details-marker { display: none; }
+.picker summary::before { content: "+ "; }
+.picker[open] summary::before { content: "- "; }
+.picker summary:hover { color: var(--text); }
+
+.picker label {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 2px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.picker input { accent-color: var(--go); cursor: pointer; }
+.picker .note { margin-top: 10px; }
+
+/* --- Tabs --- */
+.tabs {
+  display: flex;
+  gap: 6px;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 10px;
+}
+
+.tabs button {
+  background: none;
+  border: none;
+  color: var(--dim);
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.tabs button:hover { color: var(--text); }
+
+.tabs button.active {
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid var(--line);
+}
+
+.body { display: flex; flex-direction: column; gap: 22px; }
+
+/* --- Map control bar --- */
+.mapbtns { display: flex; gap: 10px; }
+
+button.linkbtn {
+  background: none;
+  border: none;
+  color: var(--dim);
+  font-size: 11.5px;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+}
+
+button.linkbtn:hover { color: var(--text); }
+
+/* --- Stop list --- */
+ol.stops { list-style: none; display: flex; flex-direction: column; gap: 2px; counter-reset: stop; }
+
+ol.stops li {
+  counter-increment: stop;
+  padding: 11px 12px 11px 40px;
+  border-radius: 7px;
+  border: 1px solid transparent;
+  position: relative;
+  cursor: pointer;
+}
+
+ol.stops li::before {
+  content: counter(stop);
+  position: absolute;
+  left: 12px;
+  top: 11px;
+  width: 19px;
+  height: 19px;
+  border-radius: 50%;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  color: var(--dim);
+  font-size: 10.5px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+ol.stops li:hover { background: rgba(255, 255, 255, 0.02); }
+ol.stops li.isnext { border-color: var(--go); background: rgba(92, 156, 62, 0.07); }
+ol.stops li.isnext::before { background: var(--go); color: #0e1409; border-color: var(--go); }
+ol.stops li.visited { opacity: 0.4; }
+ol.stops li.visited::before { content: "✓"; background: #3a4a30; color: #8fbf70; }
+ol.stops li.visited .stopname { text-decoration: line-through; }
+
+.stophead { display: flex; align-items: center; gap: 8px; }
+.stopname { font-size: 14px; font-weight: 600; }
+
+.tag {
+  font-size: 9.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #8fbf70;
+  border: 1px solid #3a4a30;
+  border-radius: 3px;
+  padding: 1px 5px;
+}
+
+.tp { font-size: 12.5px; color: #c9bd9c; margin-top: 2px; }
+.card .tp { margin-top: 3px; }
+
+/* --- World map viewer --- */
+.wmwrap { display: flex; flex-direction: column; gap: 8px; }
+
+.wmstage {
+  position: relative;
+  height: 520px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #0b1016;
+  cursor: grab;
+  touch-action: none;
+}
+
+.wmstage:active { cursor: grabbing; }
+.wmstage.picking { cursor: crosshair; }
+
+/* No will-change: transform here. It promotes this to a compositing layer, so
+   the 60 MP map gets rasterised once and then GPU-stretched on zoom, which
+   looks blurry. Letting it re-rasterise per zoom level keeps it sharp. */
+.wmlayer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: 0 0;
+}
+
+/* Tile pyramid. One .wmlevel per zoom level, each holding the tiles currently
+   on screen. image-rendering is set per level in syncTiles(), since only tiles
+   being upscaled past native want nearest-neighbour. */
+.wmtiles,
+.wmlevel {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.wmtile {
+  position: absolute;
+  display: block;
+  max-width: none;
+}
+
+/* Place names. Text rather than baked pixels, so they stay sharp at any zoom.
+   The heavy shadow is doing real work: the map underneath is busy and varied,
+   and without it names vanish over pale terrain. */
+.wmlabels { position: absolute; top: 0; left: 0; }
+
+.wmlabel {
+  position: absolute;
+  transform-origin: 50% 50%;
+  white-space: nowrap;
+  pointer-events: none;
+  user-select: none;
+  color: #fff;
+  text-shadow:
+    0 0 3px #000, 0 0 3px #000, 0 1px 2px #000, 1px 0 2px #000,
+    -1px 0 2px #000, 0 -1px 2px #000;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+/* Size by importance, so a capital reads as more than a windmill. */
+.wmlabel.t0 { font-size: 15px; }
+.wmlabel.t1 { font-size: 13px; }
+.wmlabel.t2 { font-size: 11px; opacity: 0.92; }
+.wmlabel.t3 { font-size: 10px; opacity: 0.82; font-weight: 500; }
+
+.wmlines { position: absolute; top: 0; left: 0; pointer-events: none; }
+
+.wmroute {
+  fill: none;
+  stroke: #7bc455;
+  stroke-width: 3;
+  stroke-dasharray: 14 10;
+  opacity: 0.85;
+}
+
+.wmpin {
+  position: absolute;
+  transform-origin: 50% 50%;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+
+.wmpindot {
+  width: 22px;
+  height: 22px;
+  flex: 0 0 22px;
+  border-radius: 50%;
+  background: #14120e;
+  border: 2px solid #cbbf9d;
+  color: #f0e6cc;
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
+}
+
+.wmpinlabel {
+  font-size: 11px;
+  font-weight: 600;
+  color: #f0e6cc;
+  text-shadow: 0 0 3px #000, 0 0 3px #000, 0 1px 2px #000;
+}
+
+.wmpin.next .wmpindot {
+  background: var(--go);
+  border-color: #b6f28e;
+  color: #0e1409;
+  width: 26px;
+  height: 26px;
+  flex-basis: 26px;
+  font-size: 12px;
+}
+
+.wmpin.next .wmpinlabel { color: #b6f28e; }
+.wmpin.done .wmpindot { background: #2f3d27; border-color: #6f8f5c; color: #9fd07f; }
+.wmpin.done .wmpinlabel { color: #8a9a7a; opacity: 0.8; }
+.wmpin.custom .wmpindot { background: #2a2036; border-color: #b79ae0; color: #d9c6f5; }
+.wmpin.custom .wmpinlabel { color: #c9b6e8; }
+
+.wmbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+select.minisel {
+  background: #14110c;
+  color: var(--dim);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 2px 4px;
+  font-size: 11px;
+}
+
+/* --- Layout: give the map room, keep text columns readable --- */
+#app { max-width: 1180px; }
+
+/* Dailies content stays a comfortable reading width. */
+#app > .body > section:not(:has(.wmwrap)),
+#app > .body > .picker,
+#app > .body > header { max-width: 560px; }
+
+.wmstage {
+  width: 100%;
+  height: min(72vh, 760px);
+}
+
+/* The route list reads better in columns once there's width. */
+.wmwrap + ol.stops {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 4px;
+}

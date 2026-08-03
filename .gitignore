@@ -1,0 +1,12 @@
+node_modules/
+dist/
+
+# 8530 files, ~34 MB, and fully regenerable with scripts/fetch-tiles.mjs.
+# Git handles thousands of small binaries badly and they are not source.
+public/tiles/
+
+# public/labels.json IS committed on purpose: 37 KB, and having it means a
+# fresh clone gets names without a round trip to the wiki API.
+
+*.local
+.DS_Store
