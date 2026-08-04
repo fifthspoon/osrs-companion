@@ -56,6 +56,44 @@ jobs:
           fi
           echo "clean"
 
+      # This repository is public and history is what a clone gets, so a delete
+      # commit does not undo a leak. The likeliest source is not the owner, it is
+      # an agent writing fluent prose using context it picked up from the
+      # gitignored handover, where nothing is labelled private.
+      #
+      # The patterns here are deliberately generic. A denylist of real names and
+      # real private repository names would publish the very strings it exists to
+      # keep out. Identity-specific patterns live in the local, gitignored
+      # .claude/ tooling instead. This step catches the shapes.
+      - name: No personal data
+        run: |
+          # Backslashes are written as [\\], never as \\. A bare \\ matches on GNU
+          # grep and silently MISSES in Git Bash, so the same gate that passes in
+          # CI can only ever pass when the owner runs it locally. The controls
+          # below exist to catch that, and they did catch it once already.
+          PAT='C:[\\]Users|/home/[a-z]|/Users/[a-z]|[A-Za-z]:[\\/]Stash|[a-zA-Z0-9._%+-]+@(gmail|outlook|hotmail|yahoo|proton)\.[a-z]+|discord(app)?\.com/api/webhooks|xox[baprs]-|gh[pousr]_[A-Za-z0-9]{20,}|-----BEGIN [A-Z ]*PRIVATE KEY-----'
+
+          # The probe is assembled from pieces so this file does not match its own
+          # pattern. Same reason the em dash gate builds its character from bytes.
+          PROBE=$(printf 'C:%sUsers%sx and y@%s.com' '\' '\' 'gmail')
+          printf '%s\n' "$PROBE" | grep -qiE "$PAT" || { echo "detector broken, refusing to report clean"; exit 1; }
+          printf '%s\n' 'nothing to see here' | grep -qiE "$PAT" && { echo "detector matches everything, refusing to report clean"; exit 1; }
+          echo "controls pass"
+
+          if grep -rnIiE "$PAT" --include="*.md" --include="*.ts" --include="*.mjs" --include="*.css" --include="*.html" --include="*.json" --include="*.yml" . \
+            | grep -v node_modules | grep -v '^\./dist' | grep -v '^\./\.claude' | grep -v package-lock.json | grep -v LICENSE; then
+            echo "FAIL: something that looks personal or secret is in the tree."
+            echo "Local paths, personal email addresses, webhooks and tokens do not belong in a public repository."
+            exit 1
+          fi
+          echo "tree clean"
+
+          if git log --all --format='%s%n%b' | grep -niE "$PAT"; then
+            echo "FAIL: the same, in a commit message. Those are permanent."
+            exit 1
+          fi
+          echo "messages clean"
+
       - name: Typecheck
         run: npx tsc --noEmit
 

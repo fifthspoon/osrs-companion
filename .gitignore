@@ -1,23 +1,67 @@
 node_modules/
 dist/
+*.tsbuildinfo
 
-# Wiki-derived data. Both are fetched at setup rather than committed, which
-# keeps this repository free of third party content entirely. See ATTRIBUTION.md
-# for why that matters: the tiles are Jagex artwork that Weird Gloop is
-# permitted to serve (a permission that is not transitive), and wiki text is
-# CC BY-NC-SA 3.0, whose NonCommercial clause is not open source compatible.
+# Wiki-derived data. Everything under public/ is fetched or generated at setup
+# rather than committed, which keeps this repository free of third party content
+# entirely. See ATTRIBUTION.md for why that matters: the tiles are Jagex artwork
+# that Weird Gloop is permitted to serve (a permission that is not transitive),
+# and wiki text is CC BY-NC-SA 3.0, whose NonCommercial clause is not open source
+# compatible.
 #
 # Keeping them out means the code here can carry a clean licence.
-public/tiles/
-public/tiles-clean/
-public/labels.json
-public/mapicons/
-public/mapicons.json
+#
+# This is a blanket rather than a list on purpose. A list only ever covers the
+# artifacts that existed when it was written, so the next script to write a new
+# folder in here would leak by default. Nothing under public/ is tracked and
+# nothing should be. The names it currently holds, for reference: tiles/,
+# tiles-clean/, labels.json, mapicons/, mapicons.json.
+#
+# If a genuine static asset ever needs to ship here, add a negation for that one
+# path rather than loosening the blanket. Note that the CI licence gate rejects
+# tracked images outright, so a future favicon has to be an inline SVG or a data
+# URI in index.html, not a file in here.
+public/
 
-*.local
-.DS_Store
+# Secrets. There are no accounts, no keys and no server in this project, so
+# anything matching these is a mistake rather than a config choice. Cheap
+# insurance against the one failure a later commit cannot undo, because history
+# is what a clone gets.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
 
 # Local working notes and agent tooling. The engineering knowledge that is worth
-# sharing lives in CONTRIBUTING.md instead.
+# sharing lives in CONTRIBUTING.md and docs/ instead.
 HANDOVER.md
 .claude/
+
+# Agent scratch. The audit and handover flows build throwaway harnesses at the
+# repository root and are told to delete them afterwards. An ignore rule is a
+# stronger guarantee than an instruction, because it survives the agent
+# forgetting. Anchored to the root so a real src/check.ts is never shadowed.
+/check.ts
+/check.mjs
+/*.tmp.ts
+/*.tmp.mjs
+/scratch/
+
+# Editor state. Holds absolute local paths, which are personal.
+.vscode/
+.idea/
+*.swp
+*~
+
+# OS noise, both platforms.
+.DS_Store
+Thumbs.db
+ehthumbs.db
+desktop.ini
+
+*.local
+*.log
+npm-debug.log*
