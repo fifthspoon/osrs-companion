@@ -760,3 +760,17 @@ select.minisel {
   min-width: 26px;
   text-align: right;
 }
+
+.wmicons { position: absolute; top: 0; left: 0; }
+
+.wmicon {
+  position: absolute;
+  transform-origin: 50% 50%;
+  width: 15px;
+  height: 15px;
+  max-width: none;
+  pointer-events: none;
+  user-select: none;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.9));
+}

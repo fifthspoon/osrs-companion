@@ -30,6 +30,7 @@ Needs Node 18 or newer.
 npm install
 node scripts/fetch-tiles.mjs     # one time, ~34 MB of map tiles
 node scripts/fetch-labels.mjs    # one time, place names
+node scripts/fetch-icons.mjs     # one time, ~180 KB of map icons
 npm run dev                      # http://localhost:5273
 ```
 
@@ -56,6 +57,19 @@ needs asking. "Add marker" drops your own named pin.
 Place names are drawn as live text, so they stay sharp at every zoom level and
 thin out as you zoom away instead of burying the map. Toggle them off if you
 prefer it clean.
+
+Map icons (banks, altars, farming patches, fishing spots and 100 more types) are
+drawn as their own layer rather than read off the tile pixels. The wiki bakes its
+icons in at a fixed size per tile, which means they shrink every time you zoom in
+and there is nothing you can do about it. Drawn as a layer they hold their size,
+and there are sliders for pins, icons and labels plus a reset, because no single
+size suits every screen.
+
+One honest limitation: the only icon placement data the wiki publishes dates from
+2019, so **anything added since has no overlay icons**, Varlamore included. The
+wiki's own baked icons are still there underneath, so nothing is hidden, but do
+not read an empty patch of Varlamore as "no bank here". Toggle the layer off to
+see the wiki's own set.
 
 ## Design rules
 
@@ -127,6 +141,7 @@ being a local page with no install and no background service.
 - `src/worldmapview.ts` the tile viewer: pan, zoom, pins, labels, markers.
 - `scripts/fetch-tiles.mjs` pulls the map tiles.
 - `scripts/fetch-labels.mjs` rebuilds `public/labels.json` from the wiki.
+- `scripts/fetch-icons.mjs` pulls the map icon overlay and its placements.
 
 ## Fight Caves trainer
 

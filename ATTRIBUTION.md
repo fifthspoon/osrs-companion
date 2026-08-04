@@ -38,6 +38,24 @@ either. The script rebuilds it in about thirty seconds.
 If you do redistribute a built `labels.json`, CC BY-NC-SA 3.0 travels with it:
 attribute the OSRS Wiki, share alike, non-commercial only.
 
+### Map icons
+
+Fetched by `scripts/fetch-icons.mjs` from `maps.runescape.wiki` into
+`public/mapicons/` and `public/mapicons.json`, both of which are gitignored.
+
+Two things are pulled: the placement data (which icon sits at which in-game
+coordinate) and the icon images themselves. The images are Jagex artwork rendered
+by Weird Gloop, exactly like the map tiles, so **the same non-transitive
+permission applies and they are not redistributed here.** Running the fetch makes
+your own local copy for your own use.
+
+The placement data is a coordinate list, and coordinates are facts rather than
+creative expression, but it is served from the same wiki infrastructure and is
+treated the same way for the same reason given under location names: not worth
+arguing, and the script rebuilds it in seconds.
+
+The whole set is about 180 KB, so unlike the tiles this is quick.
+
 ### Fight Caves simulation
 
 `src/fight/` is an original reimplementation. Every mechanic in it came from
@@ -62,6 +80,7 @@ stays clearly above board.
 | --- | --- |
 | Code in this repository | AGPL-3.0, see `LICENSE` |
 | Map tiles you fetch | Jagex artwork via Weird Gloop, local use only, not redistributable |
+| Map icon images you fetch | Same as the tiles: Jagex artwork via Weird Gloop, not redistributable |
 | Wiki-derived data you fetch | CC BY-NC-SA 3.0 |
 
 Note that **CC BY-NC-SA is not an open source licence**: the NonCommercial

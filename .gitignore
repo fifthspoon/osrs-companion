@@ -10,6 +10,8 @@ dist/
 # Keeping them out means the code here can carry a clean licence.
 public/tiles/
 public/labels.json
+public/mapicons/
+public/mapicons.json
 
 *.local
 .DS_Store

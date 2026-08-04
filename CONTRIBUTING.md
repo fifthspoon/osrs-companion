@@ -88,6 +88,7 @@ installs a binary never sees the readme.
 npm install
 node scripts/fetch-tiles.mjs     # ~34 MB of map tiles, resumable
 node scripts/fetch-labels.mjs    # place names into public/labels.json
+node scripts/fetch-icons.mjs     # ~180 KB of map icons and their placements
 npm run dev                      # http://localhost:5273
 npm run build                    # tsc --noEmit then vite build
 ```
@@ -224,6 +225,54 @@ is centred. Without this you can drag the world completely off screen and be lef
 staring at empty background with no cue which way back, which reads as the map
 being broken.
 
+## The icon overlay
+
+The wiki bakes its map icons into the tile pixels at a **fixed size per tile**,
+regardless of zoom level. Since each level up halves the game-world area a tile
+covers, the icons halve in world terms every time you zoom in:
+
+| Tile level | Tile covers | Baked icon spans |
+|---|---|---|
+| z0 | 256 squares | ~15 game squares |
+| z1 | 128 squares | ~7.5 |
+| z2 | 64 squares | ~3.75 |
+| z3 | 32 squares | ~1.9 |
+
+So they visibly pop smaller each time `pickTileZoom()` crosses a boundary. You
+cannot fix that by scaling tiles, because the icons are pixels in the same
+raster as the terrain.
+
+**Do not "fix" this by biasing `pickTileZoom()` down.** It works, and it is the
+wrong trade: it blurs all the terrain to enlarge the annotation drawn on top of
+it, reversing the deliberate round-up-for-sharpness choice in that function.
+
+The fix is the same one labels already use: stop using baked pixels. `fetch-icons.mjs`
+pulls the placements and the icon images, and the viewer draws them as counter-scaled
+elements that obey `iconScale()` and the user's size slider, so they never shrink.
+
+**Known limits, which are the price of this and must not be hidden from users:**
+
+- The only placement dataset the wiki serves is vintage `2019-10-31_1`. There is
+  no current one. The versioned `2026-07-29_a` paths and `chisel.weirdgloop.org`
+  all 404, and building placements from the wiki API instead is not viable:
+  Category:Altars and Category:Fishing spots are both empty and `Herb patch`
+  carries no `{{Map}}` template.
+- So **everything added from 2020 onward has no overlay icons.** Varlamore, Ferox
+  Enclave and Darkmeyer all return zero. Pre-2020 content is well covered:
+  Varrock 53, Ardougne 41, Fossil Island 40.
+- The baked wiki icons stay visible underneath and remain the fallback of record,
+  which is why the overlay is a toggle rather than a replacement. A user seeing no
+  overlay icon in Varlamore must not conclude there is no bank there.
+- The overlay is hidden below `ICON_MIN_PER_SQUARE` (1.5 px per game square).
+  That is a load and a legibility decision: worst case on screen is 510 icons at
+  that threshold, comparable to the 507 labels, against 853 at 1.0 and 1245 at 0.5.
+- Only plane 0 is kept. The viewer draws ground level, so the 153 icons on upper
+  floors would sit on terrain they do not belong to.
+
+Verified when built: the GeoJSON coordinates are the same in-game coordinate
+system this app uses, no transform needed. Varrock west bank, the Grand Exchange,
+Lumbridge, Falador east bank and Edgeville all resolve to the right icons.
+
 ## Labels
 
 The wiki tiles contain **no text at any zoom.** Checked on a full z0 tile covering
@@ -311,6 +360,7 @@ whenever a number looks off:
 | `src/fight/` | Renderer, input, guide and loadout panels |
 | `scripts/fetch-tiles.mjs` | Pulls the tile pyramid. Resumable |
 | `scripts/fetch-labels.mjs` | Builds `public/labels.json` from the wiki API |
+| `scripts/fetch-icons.mjs` | Builds `public/mapicons.json` and pulls the icon images |
 
 localStorage keys: `osrs-companion:v1` (tasks), `:run:v1`, `:markers:v1`,
 `:labels:v1` (label toggle), `:ge:v1` (market filters), `:tab`.

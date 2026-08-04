@@ -32,10 +32,23 @@ let labelsOn = localStorage.getItem(LABELS_KEY) !== "0";
 let labelData: LabelDef[] = [];
 let labelsLoading: Promise<void> | null = null;
 
+const ICONS_KEY = "osrs-companion:mapicons:v1";
+let iconsOn = localStorage.getItem(ICONS_KEY) !== "0";
+let iconData: IconData | null = null;
+let iconsLoading: Promise<void> | null = null;
+
+const ICON_MIN_PER_SQUARE = 1.5;
+
+interface IconData {
+  sourceVintage: string;
+  types: Record<string, { file: string; name: string; category: string }>;
+  icons: [string, number, number][];
+}
+
 const SIZE_KEY = "osrs-companion:mapsize:v1";
 const SIZE_MIN = 0.5;
 const SIZE_MAX = 3;
-const SIZE_DEFAULTS = { pin: 1, label: 1 };
+const SIZE_DEFAULTS = { pin: 1, label: 1, icon: 1 };
 type SizePrefs = typeof SIZE_DEFAULTS;
 
 function clampMul(v: unknown): number {
@@ -48,7 +61,7 @@ function loadSizes(): SizePrefs {
     const raw = localStorage.getItem(SIZE_KEY);
     if (!raw) return { ...SIZE_DEFAULTS };
     const p = JSON.parse(raw) as Partial<SizePrefs>;
-    return { pin: clampMul(p.pin), label: clampMul(p.label) };
+    return { pin: clampMul(p.pin), label: clampMul(p.label), icon: clampMul(p.icon) };
   } catch {
     return { ...SIZE_DEFAULTS };
   }
@@ -89,6 +102,10 @@ function pinScale(perSquare: number): number {
   return growth(perSquare, 2.6) * sizePrefs.pin;
 }
 
+function iconScale(perSquare: number): number {
+  return growth(perSquare, 2.6) * sizePrefs.icon;
+}
+
 function growth(perSquare: number, ceiling: number): number {
   return Math.min(ceiling, Math.max(1, Math.cbrt(Math.max(perSquare, 0.01)) * 0.75));
 }
@@ -98,6 +115,19 @@ function tierForZoom(perSquare: number): number {
   if (perSquare < 0.9) return 1;
   if (perSquare < 2.5) return 2;
   return 3;
+}
+
+function ensureIcons(onReady: () => void): void {
+  if (iconData || iconsLoading) return;
+  iconsLoading = fetch("/mapicons.json")
+    .then((r) => (r.ok ? r.json() : null))
+    .then((raw: IconData | null) => {
+      iconData = raw;
+      onReady();
+    })
+    .catch(() => {
+      iconData = null;
+    });
 }
 
 function ensureLabels(onReady: () => void): void {
@@ -135,6 +165,10 @@ export function render(route: RouteDef, ctx: ViewCtx, rerender: () => void): HTM
   const tileHost = document.createElement("div");
   tileHost.className = "wmtiles";
   layer.appendChild(tileHost);
+
+  const iconHost = document.createElement("div");
+  iconHost.className = "wmicons";
+  layer.appendChild(iconHost);
 
   const labelHost = document.createElement("div");
   labelHost.className = "wmlabels";
@@ -281,6 +315,56 @@ export function render(route: RouteDef, ctx: ViewCtx, rerender: () => void): HTM
     purgeStale(z);
   }
 
+  const liveIcons = new Map<number, HTMLElement>();
+
+  function syncIcons() {
+    const r = stage.getBoundingClientRect();
+    if (r.width <= 0) return;
+
+    const perSquare = zoom * PX_PER_SQUARE;
+    if (!iconsOn || !iconData || perSquare < ICON_MIN_PER_SQUARE) {
+      for (const el of liveIcons.values()) el.remove();
+      liveIcons.clear();
+      return;
+    }
+
+    const inv = iconScale(perSquare) / zoom;
+    const x0 = -offX / zoom;
+    const y0 = -offY / zoom;
+    const x1 = (r.width - offX) / zoom;
+    const y1 = (r.height - offY) / zoom;
+
+    const need = new Set<number>();
+    iconData.icons.forEach(([key, wx, wy], i) => {
+      const p = worldToPx(wx, wy);
+      if (p.x < x0 || p.x > x1 || p.y < y0 || p.y > y1) return;
+
+      need.add(i);
+      let el = liveIcons.get(i);
+      if (!el) {
+        const def = iconData!.types[key];
+        if (!def) return;
+        el = document.createElement("img");
+        el.className = "wmicon";
+        (el as HTMLImageElement).src = `/mapicons/${def.file}`;
+        (el as HTMLImageElement).alt = "";
+        (el as HTMLImageElement).draggable = false;
+        el.title = def.name;
+        el.style.left = `${p.x}px`;
+        el.style.top = `${p.y}px`;
+        iconHost.appendChild(el);
+        liveIcons.set(i, el);
+      }
+      el.style.transform = `translate(-50%, -50%) scale(${inv})`;
+    });
+
+    for (const [k, el] of [...liveIcons]) {
+      if (need.has(k)) continue;
+      el.remove();
+      liveIcons.delete(k);
+    }
+  }
+
   const liveLabels = new Map<string, HTMLElement>();
 
   function syncLabels() {
@@ -329,6 +413,7 @@ export function render(route: RouteDef, ctx: ViewCtx, rerender: () => void): HTM
   }
 
   ensureLabels(() => apply());
+  ensureIcons(() => apply());
 
   let applied = false;
   function fit() {
@@ -390,6 +475,7 @@ export function render(route: RouteDef, ctx: ViewCtx, rerender: () => void): HTM
       el.setAttribute("stroke-width", String(Math.max(2, 3 * lineInv)));
     });
     syncTiles();
+    syncIcons();
     syncLabels();
   }
 
@@ -533,7 +619,13 @@ function controls(
       localStorage.setItem(LABELS_KEY, labelsOn ? "1" : "0");
       rerender();
     });
-    sizer("icons", "pin");
+    mk(iconsOn ? "map icons on" : "map icons off", () => {
+      iconsOn = !iconsOn;
+      localStorage.setItem(ICONS_KEY, iconsOn ? "1" : "0");
+      rerender();
+    });
+    sizer("pins", "pin");
+    sizer("icons", "icon");
     sizer("labels", "label");
     mk("reset sizes", () => {
       sizePrefs = { ...SIZE_DEFAULTS };
