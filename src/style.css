@@ -64,7 +64,6 @@ section h2 {
   font-weight: 600;
 }
 
-/* Ready tasks are the only loud thing on the page. */
 .card {
   background: var(--panel);
   border: 1px solid var(--line);
@@ -107,7 +106,6 @@ button.done {
 
 button.done:hover { background: var(--go-bright); }
 
-/* Waiting rows are deliberately quiet. no red, no "overdue", no guilt. */
 .row {
   display: flex;
   align-items: center;
@@ -165,7 +163,6 @@ button.undo:hover { color: var(--text); }
 .picker input { accent-color: var(--go); cursor: pointer; }
 .picker .note { margin-top: 10px; }
 
-/* --- Tabs --- */
 .tabs {
   display: flex;
   gap: 6px;
@@ -193,7 +190,6 @@ button.undo:hover { color: var(--text); }
 
 .body { display: flex; flex-direction: column; gap: 22px; }
 
-/* --- Map control bar --- */
 .mapbtns { display: flex; gap: 10px; }
 
 button.linkbtn {
@@ -208,7 +204,6 @@ button.linkbtn {
 
 button.linkbtn:hover { color: var(--text); }
 
-/* --- Stop list --- */
 ol.stops { list-style: none; display: flex; flex-direction: column; gap: 2px; counter-reset: stop; }
 
 ol.stops li {
@@ -261,12 +256,11 @@ ol.stops li.visited .stopname { text-decoration: line-through; }
 .tp { font-size: 12.5px; color: #c9bd9c; margin-top: 2px; }
 .card .tp { margin-top: 3px; }
 
-/* --- World map viewer --- */
 .wmwrap { display: flex; flex-direction: column; gap: 8px; }
 
 .wmstage {
   position: relative;
-  height: 520px;
+  aspect-ratio: 24576 / 17408;
   overflow: hidden;
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -278,9 +272,6 @@ ol.stops li.visited .stopname { text-decoration: line-through; }
 .wmstage:active { cursor: grabbing; }
 .wmstage.picking { cursor: crosshair; }
 
-/* No will-change: transform here. It promotes this to a compositing layer, so
-   the 60 MP map gets rasterised once and then GPU-stretched on zoom, which
-   looks blurry. Letting it re-rasterise per zoom level keeps it sharp. */
 .wmlayer {
   position: absolute;
   top: 0;
@@ -288,9 +279,6 @@ ol.stops li.visited .stopname { text-decoration: line-through; }
   transform-origin: 0 0;
 }
 
-/* Tile pyramid. One .wmlevel per zoom level, each holding the tiles currently
-   on screen. image-rendering is set per level in syncTiles(), since only tiles
-   being upscaled past native want nearest-neighbour. */
 .wmtiles,
 .wmlevel {
   position: absolute;
@@ -304,9 +292,6 @@ ol.stops li.visited .stopname { text-decoration: line-through; }
   max-width: none;
 }
 
-/* Place names. Text rather than baked pixels, so they stay sharp at any zoom.
-   The heavy shadow is doing real work: the map underneath is busy and varied,
-   and without it names vanish over pale terrain. */
 .wmlabels { position: absolute; top: 0; left: 0; }
 
 .wmlabel {
@@ -323,9 +308,6 @@ ol.stops li.visited .stopname { text-decoration: line-through; }
   letter-spacing: 0.02em;
 }
 
-/* Size by importance, so a capital reads as more than a windmill. These are
-   base sizes: labelScale() multiplies them by up to 2.2 as you zoom in. The
-   spread stays modest because the tiers already differ by when they appear. */
 .wmlabel.t0 { font-size: 15px; }
 .wmlabel.t1 { font-size: 13px; }
 .wmlabel.t2 { font-size: 12px; opacity: 0.94; }
@@ -410,33 +392,19 @@ select.minisel {
   font-size: 11px;
 }
 
-/* --- Layout: give the map room, keep text columns readable --- */
 #app { max-width: 1180px; }
 
-/* Dailies content stays a comfortable reading width. */
 #app > .body > section:not(:has(.wmwrap)),
 #app > .body > .picker,
 #app > .body > header { max-width: 560px; }
 
-.wmstage {
-  width: 100%;
-  height: min(72vh, 760px);
-}
+.wmstage { width: 100%; }
 
-/* The route list reads better in columns once there's width. */
 .wmwrap + ol.stops {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: 4px;
 }
-
-/* --- Fight Caves trainer --- */
-/* Ported from the standalone tick trainer. Its palette was already all but
-   identical to this app's, so the hardcoded hexes are swapped for the shared
-   variables and the layout is restacked: the trainer put guide | canvas |
-   loadout in one row at a fixed width. Here the canvas sits on top with the
-   two panels side by side underneath, so it reflows with the container.
-   No width override needed, #app is already 1180px for the map. */
 
 .fightwrap { display: flex; flex-direction: column; gap: 10px; }
 
@@ -595,7 +563,6 @@ select.minisel {
   .fightcols { grid-template-columns: 1fr; }
 }
 
-/* --- Grand Exchange flips --- */
 .gewrap { display: flex; flex-direction: column; gap: 14px; }
 
 .gebar {
@@ -622,7 +589,6 @@ select.minisel {
 
 .gebar input[type="checkbox"] { accent-color: var(--go); cursor: pointer; }
 
-/* The single best flip is the only loud thing here, same as a ready daily. */
 .getop { align-items: flex-start; }
 
 .geprofit { text-align: right; flex-shrink: 0; }
@@ -669,8 +635,6 @@ select.minisel {
 .gename { color: var(--text); font-weight: 600; }
 .geprofitcell { color: #8fbf70; font-weight: 600; }
 
-/* Filter panel. Collapsed by default: the defaults are meant to be right, and
-   opening this is for disagreeing with them, not a step you must take. */
 .gefilters { border-top: 1px solid var(--line); }
 
 .gefiltergrid {
@@ -773,4 +737,26 @@ select.minisel {
   user-select: none;
   image-rendering: pixelated;
   filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.9));
+}
+
+.wipbanner {
+  border: 1px solid #7a5a2a;
+  border-left: 3px solid #c88a4a;
+  border-radius: 6px;
+  background: rgba(200, 138, 74, 0.08);
+  padding: 10px 13px;
+  margin-bottom: 12px;
+}
+
+.wipbanner strong {
+  display: block;
+  color: #e0a866;
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+
+.wipbanner p {
+  font-size: 12px;
+  color: var(--dim);
+  line-height: 1.45;
 }

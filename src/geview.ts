@@ -1,20 +1,6 @@
 import { fetchMarket, computeFlips, gp, age, TAX_RATE } from "./ge";
 import type { Market, Flip, FlipOpts } from "./ge";
 
-// The market tab.
-//
-// Same rule as the rest of the app: one loud answer, everything else quiet.
-// A wall of 4000 rows sorted by margin is what the paid sites do and it is
-// useless, because the top of that list is always illiquid junk that will never
-// fill. This shows the single best realistic flip large, then a short ranked
-// list, and it shows volume and price age on every row so the judgement is
-// visible rather than hidden.
-//
-// Filters are adjustable but collapsed by default. The defaults are meant to be
-// right for most people most of the time, in keeping with "the app has already
-// decided". Opening the panel is for when you disagree with it, not a step you
-// are expected to take.
-
 const KEY = "osrs-companion:ge:v1";
 
 interface Settings extends FlipOpts {
@@ -36,7 +22,6 @@ function loadSettings(): Settings {
     const raw = localStorage.getItem(KEY);
     if (raw) return { ...DEFAULTS, ...JSON.parse(raw) };
   } catch {
-    // fall through to defaults
   }
   return { ...DEFAULTS };
 }
@@ -52,7 +37,6 @@ function save() {
   try {
     localStorage.setItem(KEY, JSON.stringify(s));
   } catch {
-    // ignore
   }
 }
 
@@ -85,8 +69,6 @@ export function render(rerender: () => void): HTMLElement {
 
   if (!market && !loading && !error) load(rerender);
 
-  // The API sets a 60 second cache, so refreshing faster than that just serves
-  // the same bytes back. Matching it exactly is both polite and pointless to beat.
   timer = window.setInterval(() => {
     if (!loading) load(rerender);
   }, 60_000);
@@ -140,8 +122,6 @@ function msg(title: string, note: string): HTMLElement {
   return d;
 }
 
-// Capital and refresh live up top because they are the two things you actually
-// touch. Everything else is behind the filter panel.
 function topBar(rerender: () => void): HTMLElement {
   const bar = document.createElement("div");
   bar.className = "gebar";
@@ -172,7 +152,6 @@ function topBar(rerender: () => void): HTMLElement {
   return bar;
 }
 
-// Accepts 10m / 500k / 1.5b as well as raw digits, because nobody types 10000000.
 function parseGp(v: string): number {
   const raw = v.trim().toLowerCase().replace(/[, ]/g, "");
   const mult = raw.endsWith("b") ? 1e9 : raw.endsWith("m") ? 1e6 : raw.endsWith("k") ? 1e3 : 1;
@@ -259,8 +238,6 @@ function filters(rerender: () => void, shown: number, priced: number): HTMLEleme
     "Below the headline pick.",
   );
 
-  // Max buy price is a free-text field because the useful value varies by orders
-  // of magnitude between players.
   const mb = document.createElement("label");
   mb.append("Max price per item");
   const mbIn = document.createElement("input");

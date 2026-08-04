@@ -8,15 +8,6 @@ import { createGuidePanel } from "./fight/guide";
 import { DEFAULT_LOADOUT } from "./fight/engine/loadout";
 import type { Loadout } from "./fight/engine/loadout";
 
-// The Fight Caves trainer, folded in as a tab.
-//
-// This tab is different from every other one in the app: it owns a
-// requestAnimationFrame loop and a window-level key listener, so it MUST be
-// torn down when you navigate away. main.ts calls stop() before any redraw.
-// Without that the loop keeps running against a detached canvas forever and
-// key listeners stack up on every visit.
-
-// Kept at module scope so a loadout survives tab switches within a session.
 let loadout: Loadout = { ...DEFAULT_LOADOUT };
 let reactionTicks = 2;
 
@@ -30,12 +21,21 @@ export function stop(): void {
 }
 
 export function render(): HTMLElement {
-  // Defensive: if something rendered this tab twice without stopping, the old
-  // loop would keep drawing into an orphaned canvas.
   stop();
 
   const wrap = document.createElement("div");
   wrap.className = "fightwrap";
+
+  const wip = document.createElement("div");
+  wip.className = "wipbanner";
+  const wipHead = document.createElement("strong");
+  wipHead.textContent = "Heavily work in progress. Use at your own risk.";
+  wip.appendChild(wipHead);
+  const wipBody = document.createElement("p");
+  wipBody.textContent =
+    "This sim is unfinished and not verified against the real fight. Timings, damage and behaviour may all be wrong. Practise here if it helps, but do not treat anything it tells you as accurate, and do not plan a real attempt around it.";
+  wip.appendChild(wipBody);
+  wrap.appendChild(wip);
 
   const canvas = document.createElement("canvas");
   canvas.id = "game";
@@ -69,9 +69,6 @@ export function render(): HTMLElement {
   );
   cols.appendChild(createGuidePanel());
 
-  // Fixed-timestep loop: the simulation advances in discrete 600ms ticks while
-  // rendering runs every animation frame and interpolates between the last two
-  // sim states for smooth motion. Logic is tick-locked; visuals are not.
   let acc = 0;
   let last = performance.now();
 

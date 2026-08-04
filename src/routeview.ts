@@ -2,10 +2,6 @@ import type { RouteDef } from "./routes";
 import * as worldmapview from "./worldmapview";
 import * as run from "./runstate";
 
-// The route view. The ordered list is the primary thing and works on its own,
-// the map overlay is optional on top. Every stop is a teleport, so the list
-// alone is enough to run the whole thing.
-
 export function render(route: RouteDef, rerender: () => void): HTMLElement {
   const el = document.createElement("section");
   const next = run.nextStop(route);
@@ -15,7 +11,6 @@ export function render(route: RouteDef, rerender: () => void): HTMLElement {
   h2.textContent = `${route.name} · ${done}/${route.stops.length}`;
   el.appendChild(h2);
 
-  // The one loud thing: where to go right now.
   const card = document.createElement("div");
   card.className = next ? "card ready" : "card idle";
   if (next) {

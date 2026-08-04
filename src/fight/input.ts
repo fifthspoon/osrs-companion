@@ -1,9 +1,6 @@
 import type { PlayerInput } from "./engine/types";
 import { pxToTile } from "./engine/grid";
 
-// Captures input continuously but hands it to the sim in per-tick batches.
-// Clicks and prayer switches queue and resolve on the NEXT tick, exactly like a
-// click in OSRS resolves on the next server tick, not the instant you press.
 export class InputBuffer {
   private pending: PlayerInput[] = [];
   private reset = false;
@@ -17,9 +14,6 @@ export class InputBuffer {
     target.addEventListener("keydown", onKey);
     canvas.addEventListener("click", onClick);
     canvas.addEventListener("contextmenu", onCtx);
-    // Without this, leaving and re-entering the fight stacks another keydown
-    // listener on the window and every prayer switch queues twice, then three
-    // times, and so on.
     this.detach = () => {
       target.removeEventListener("keydown", onKey);
       canvas.removeEventListener("click", onClick);
@@ -40,9 +34,6 @@ export class InputBuffer {
   }
 
   private onKey(e: KeyboardEvent) {
-    // The loadout panel sits on the same page and is full of number inputs.
-    // Without this guard, typing a "1" into a stat box eats the digit and
-    // switches your prayer instead.
     const t = e.target as HTMLElement | null;
     if (t && (t.tagName === "INPUT" || t.tagName === "SELECT" || t.tagName === "TEXTAREA" || t.isContentEditable)) {
       return;

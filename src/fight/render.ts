@@ -36,7 +36,6 @@ export class Renderer {
     const jad = cur.npcs.find((n) => n.kind === "jad");
     const jadPrev = prev.npcs.find((n) => n.id === jad?.id);
 
-    // Jad (5x5 block, telegraph-coloured).
     if (jad && jad.hp > 0) {
       const tl = lerp(
         { x: ARENA.x + (jadPrev ?? jad).pos.x * TILE, y: ARENA.y + (jadPrev ?? jad).pos.y * TILE },
@@ -64,7 +63,6 @@ export class Renderer {
       }
     }
 
-    // Healers.
     for (const npc of cur.npcs) {
       if (npc.kind !== "healer" || npc.hp <= 0) continue;
       const np = prev.npcs.find((n) => n.id === npc.id) ?? npc;
@@ -77,7 +75,6 @@ export class Renderer {
       this.bar(c.x - TILE / 2 + 2, c.y - TILE / 2 - 4, TILE - 4, 4, npc.hp / npc.maxHp, "#66dd66", "#402");
     }
 
-    // Projectiles (magic/range in flight; melee resolves instantly, shown via Jad flash).
     const now = cur.tick + alpha;
     for (const proj of cur.projectiles) {
       const span = proj.landsOn - proj.firedOn;
@@ -92,7 +89,6 @@ export class Renderer {
       ctx.stroke();
     }
 
-    // Move-target marker.
     if (cur.player.moveTarget) {
       const m = tileCenter(cur.player.moveTarget);
       ctx.strokeStyle = "#e8dc55";
@@ -103,7 +99,6 @@ export class Renderer {
       ctx.stroke();
     }
 
-    // Player.
     const pl = cur.player;
     const plPos = lerp(tileCenter(prev.player.pos), tileCenter(pl.pos), alpha);
     const inMelee = jad ? distToBlock(pl.pos, jad.pos, jad.size) <= MELEE_RANGE : false;

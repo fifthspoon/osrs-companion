@@ -1,17 +1,3 @@
-// Builds the map label set.
-//
-// The wiki's map tiles carry no text at any zoom, so place names have to come
-// from somewhere else. They come from the location articles: every one carries
-// an infobox with {{Map|...|x=NNNN|y=NNNN}}, which is the coordinate the wiki
-// centres that location's map on. Good enough to anchor a label, and it is real
-// data rather than someone eyeballing a picture.
-//
-// Rendering these as live text instead of baked pixels is strictly better than
-// what the old flat map had: crisp at every zoom, and they can be thinned out
-// as you zoom away so the map does not turn into a wall of names.
-//
-// `type` and `len` are carried through so the app can decide what to show at
-// what zoom without this ever needing to be re-fetched.
 
 import { writeFile } from "node:fs/promises";
 import { join, dirname } from "node:path";
@@ -21,9 +7,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const API = "https://oldschool.runescape.wiki/api.php";
 const UA = "osrs-companion/0.1 (personal local tool)";
 
-// Matches the tiles pulled by fetch-tiles.mjs. Anything outside is a dungeon or
-// an instanced area sitting off in far coordinate space, with no surface tile.
-const BOUNDS = { minX: 1024, minY: 2048, maxX: 4096, maxY: 4224 };
+const BOUNDS = { minX: 960, minY: 2048, maxX: 4032, maxY: 4224 };
 
 async function api(params) {
   const u = new URL(API);
@@ -33,7 +17,6 @@ async function api(params) {
   return r.json();
 }
 
-// Every page in Category:Locations, main namespace only.
 const titles = [];
 let cont = null;
 do {
@@ -69,8 +52,6 @@ for (let i = 0; i < titles.length; i += 50) {
     const text = p.revisions?.[0]?.slots?.main?.["*"];
     if (!text) continue;
 
-    // First {{Map ...}} in the article. Pull x and y out of its parameters
-    // rather than the whole page, so a stray "x=" elsewhere cannot match.
     const m = text.match(/\{\{Map\b([^}]*)\}\}/i);
     if (!m) {
       noMap++;
@@ -98,7 +79,6 @@ for (let i = 0; i < titles.length; i += 50) {
   process.stdout.write(`\r  ${Math.min(i + 50, titles.length)}/${titles.length}`);
 }
 
-// Biggest articles first, so the app can just take the first N for a zoom level.
 out.sort((a, b) => b.len - a.len);
 
 await writeFile(join(ROOT, "public", "labels.json"), JSON.stringify(out));

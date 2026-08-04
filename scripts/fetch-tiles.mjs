@@ -1,22 +1,3 @@
-// Pulls the wiki's map tiles into public/tiles so the viewer can serve them
-// locally instead of scaling one giant PNG.
-//
-// Scheme, confirmed empirically against the live server rather than from docs:
-//   https://maps.runescape.wiki/osrs/versions/{VERSION}/tiles/rendered/{mapID}/{z}/{p}_{x}_{y}.png
-//   tile x = floor(gameX / span), tile y = floor(gameY / span), span = 256 / 2^z
-//
-// Two traps worth knowing about, both cost time to find:
-//
-// 1. The wiki's own documentation publishes the format as "{p}_{x}_{-y}.png".
-//    The {-y} is a Leaflet placeholder name, not a literal minus sign. Indices
-//    are plain positives. Building the filename with a real "-" 404s every
-//    single tile.
-//
-// 2. maps.runescape.wiki still serves an old app whose config points at
-//    cacheVersion 2019-10-31_1. Those tiles are bare terrain and predate
-//    Varlamore entirely. The live wiki uses the versioned path below instead,
-//    which is current and has the map icons baked in. Check a page like
-//    Civitas_illa_Fortis for the current VERSION string if tiles start 404ing.
 
 import { mkdir, writeFile, access } from "node:fs/promises";
 import { dirname, join } from "node:path";
@@ -30,14 +11,10 @@ const HOST = `https://maps.runescape.wiki/osrs/versions/${VERSION}/tiles/rendere
 const MAP_ID = 0;                    // surface
 const PLANE = 0;                     // ground level
 
-// Deliberately a little wider than the wiki's stated surface bounds so new
-// areas are not clipped. Out of range just 404s, which costs 162 bytes.
-const BOUNDS = { minX: 1024, minY: 2048, maxX: 4096, maxY: 4224 };
+const BOUNDS = { minX: 960, minY: 2048, maxX: 4032, maxY: 4224 };
 
-// z3 is maxNativeZoom: z4 and z5 404. Anything past it would be upscaled blur.
 const ZOOMS = [0, 1, 2, 3];
 
-// A plain fetch UA gets a 403 from this host.
 const UA = "osrs-companion/0.1 (personal local tool; one-time tile pull)";
 const CONCURRENCY = 6;
 

@@ -3,7 +3,7 @@ import {
   loadMarkers, saveMarkers,
   worldToPx, pxToWorld,
   pickTileZoom, tileSpan, tileBaseSize, tileOrigin, tileRange, tileUrl,
-  PX_PER_SQUARE, NATIVE_Z, WORLD_BOUNDS, BASE_W, BASE_H,
+  PX_PER_SQUARE, WORLD_BOUNDS, BASE_W, BASE_H,
 } from "./worldmap";
 import type { CustomMarker } from "./worldmap";
 
@@ -104,11 +104,11 @@ function pinScale(perSquare: number): number {
 }
 
 function iconScale(perSquare: number): number {
-  return growth(perSquare, 2.6) * sizePrefs.icon;
+  return growth(perSquare, 3, 1) * sizePrefs.icon;
 }
 
-function growth(perSquare: number, ceiling: number): number {
-  return Math.min(ceiling, Math.max(1, Math.cbrt(Math.max(perSquare, 0.01)) * 0.75));
+function growth(perSquare: number, ceiling: number, coeff = 0.75): number {
+  return Math.min(ceiling, Math.max(1, Math.cbrt(Math.max(perSquare, 0.01)) * coeff));
 }
 
 function tierForZoom(perSquare: number): number {
@@ -149,6 +149,7 @@ let zoom = 0.03;
 let offX = 0;
 let offY = 0;
 let inited = false;
+let minZoom = 0.02;
 
 const MAX_ZOOM = 2;
 
@@ -329,11 +330,7 @@ export function render(route: RouteDef, ctx: ViewCtx, rerender: () => void): HTM
       return;
     }
 
-    // The baked icon underneath is 15 source pixels blown up by however much
-    // the current tile level is being stretched. Ours has to be at least that
-    // big or the two show as a ghost pair instead of one icon.
-    const baked = (1 << (NATIVE_Z - pickTileZoom(zoom))) * zoom;
-    const inv = Math.max(iconScale(perSquare), baked) / zoom;
+    const inv = iconScale(perSquare) / zoom;
     const x0 = -offX / zoom;
     const y0 = -offY / zoom;
     const x1 = (r.width - offX) / zoom;
@@ -424,12 +421,13 @@ export function render(route: RouteDef, ctx: ViewCtx, rerender: () => void): HTM
   function fit() {
     const r = stage.getBoundingClientRect();
     if (r.width <= 0) return;
+    const tl = worldToPx(WORLD_BOUNDS.minX, WORLD_BOUNDS.maxY);
+    const br = worldToPx(WORLD_BOUNDS.maxX, WORLD_BOUNDS.minY);
+    const w = br.x - tl.x;
+    const h = br.y - tl.y;
+    minZoom = Math.min(r.width / w, r.height / h);
     if (!inited) {
-      const tl = worldToPx(WORLD_BOUNDS.minX, WORLD_BOUNDS.maxY);
-      const br = worldToPx(WORLD_BOUNDS.maxX, WORLD_BOUNDS.minY);
-      const w = br.x - tl.x;
-      const h = br.y - tl.y;
-      zoom = Math.min(r.width / w, r.height / h);
+      zoom = minZoom;
       offX = -tl.x * zoom + (r.width - w * zoom) / 2;
       offY = -tl.y * zoom + (r.height - h * zoom) / 2;
       inited = true;
@@ -450,6 +448,7 @@ export function render(route: RouteDef, ctx: ViewCtx, rerender: () => void): HTM
   function clampView() {
     const r = stage.getBoundingClientRect();
     if (r.width <= 0) return;
+    if (zoom < minZoom) zoom = minZoom;
 
     const tl = worldToPx(WORLD_BOUNDS.minX, WORLD_BOUNDS.maxY);
     const br = worldToPx(WORLD_BOUNDS.maxX, WORLD_BOUNDS.minY);
@@ -492,7 +491,7 @@ export function render(route: RouteDef, ctx: ViewCtx, rerender: () => void): HTM
       const cx = e.clientX - r.left;
       const cy = e.clientY - r.top;
       const factor = e.deltaY < 0 ? 1.15 : 1 / 1.15;
-      const next = Math.min(MAX_ZOOM, Math.max(0.02, zoom * factor));
+      const next = Math.min(MAX_ZOOM, Math.max(minZoom, zoom * factor));
       const k = next / zoom;
       offX = cx - (cx - offX) * k;
       offY = cy - (cy - offY) * k;

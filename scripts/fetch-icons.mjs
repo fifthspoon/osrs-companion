@@ -1,9 +1,3 @@
-// Builds the map icon overlay by scanning the downloaded tiles for the wiki's
-// own icon sprites. Run fetch-tiles.mjs first. See CONTRIBUTING.md
-// "The icon overlay" for why it works this way.
-//
-// CALIBRATE=1 additionally scores the result against the wiki's 2019 placement
-// data and reports recall and invention rates instead of writing output.
 
 import { writeFile, mkdir, readdir } from "node:fs/promises";
 import { readFileSync, existsSync } from "node:fs";
@@ -31,13 +25,6 @@ const CALIBRATE = process.env.CALIBRATE === "1";
 const TOL = Number(process.env.TOL ?? 16);
 const PROBE = process.env.PROBE === "1";
 
-// MainIcons.json stops at sprite 1695 and is itself from the 2019 app, so the
-// obvious worry is icon types added since that we could never detect. PROBE=1
-// checks. It has been run: ids 1752-1764 and 1802 do exist beyond the catalogue,
-// but they are 40x40 with 5 or 6 colours rather than 15x15, so they are the
-// separate "map icon orbs" asset family and are not composited into tiles. Added
-// to the sprite set they match nothing, which is the right answer. Left empty
-// deliberately.
 const EXTRA_SPRITES = [];
 const PROBE_RANGE = [1448, 1900];
 
@@ -88,18 +75,12 @@ for (const d of catalogue) {
     pulled++;
   }
   const im = PNG.sync.read(readFileSync(dest));
-  // Anything not 15x15 is a different asset family, not a tile icon.
   if (im.width !== SPRITE || im.height !== SPRITE) continue;
   sprites.push({ key, data: im.data });
   types[key] = { file: d.file, name: d.name, category: d.category };
 }
 console.log(`${sprites.length} sprites (${pulled} newly downloaded)`);
 
-// Every map icon sits in the same circular frame, and those frame pixels are
-// byte identical across all 119 sprites. Matching the frame rather than the
-// glyph is what makes unlisted icon types findable at all: Sailing content has
-// icons that exist on the map and in no published catalogue, and glyph matching
-// can only ever find things it already has a picture of.
 const disc = [];
 const frame = [];
 for (let y = 0; y < SPRITE; y++) {
@@ -136,7 +117,6 @@ function tile(tx, ty) {
   return im;
 }
 
-// Padded canvas so an icon straddling a tile seam is still matched whole.
 const SIDE = TILE_PX + PAD * 2;
 const buf = new Uint8Array(SIDE * SIDE * 3);
 
@@ -182,8 +162,6 @@ function classify(ox, oy) {
   }
   if (best.frac >= THRESHOLD) return best;
 
-  // Unlisted type: lift the glyph straight off the map, masked to the disc so
-  // no surrounding terrain comes with it, and treat it as a sprite from now on.
   const px = Buffer.alloc(SPRITE * SPRITE * 4);
   let sig = "";
   for (const [x, y] of disc) {
@@ -195,8 +173,6 @@ function classify(ox, oy) {
     px[i + 3] = 255;
     sig += `${buf[j]},${buf[j + 1]},${buf[j + 2]};`;
   }
-  // Registered only once the hit survives dedup, or every near duplicate offset
-  // would mint its own type.
   const hash = createHash("sha1").update(sig).digest("hex").slice(0, 10);
   return { key: `unlisted_${hash}`, frac: best.frac, hash, px };
 }
@@ -267,8 +243,6 @@ if (CALIBRATE) {
     .filter((f) => f.properties.mapID === 0 && f.geometry.coordinates[2] === 0)
     .map((f) => [f.properties.icon, f.geometry.coordinates[0], f.geometry.coordinates[1]]);
 
-  // Only score where the 2019 data is trustworthy. Post-2019 regions legitimately
-  // have icons it never knew about, so counting those as inventions is wrong.
   const box = (x, y) => x >= 2900 && x <= 3400 && y >= 3150 && y <= 3550;
   const t = truth.filter(([, x, y]) => box(x, y));
   const g = icons.filter(([, x, y]) => box(x, y));
@@ -287,8 +261,6 @@ if (CALIBRATE) {
   process.exit(0);
 }
 
-// Unlisted types get their artwork written out from what was lifted off the map,
-// so they render like any other icon rather than as a placeholder.
 for (const [hash, px] of unlisted) {
   const png = new PNG({ width: SPRITE, height: SPRITE });
   px.copy(png.data);

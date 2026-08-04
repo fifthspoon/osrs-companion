@@ -1,14 +1,3 @@
-// Recurring OSRS task definitions.
-//
-// Two kinds:
-//   "cooldown" restarts a timer from the moment YOU mark it done. Farming and
-//     birdhouse timers work this way. they start when you plant or set, not on
-//     a global clock.
-//   "daily" resets at 00:00 UTC for everyone regardless of when you did it.
-//
-// Cooldown minutes marked APPROX below are community/wiki recommended values
-// and vary a little in game. Edit them here if yours feel off. Better to have
-// a number you trust than one I guessed at.
 
 export type TaskKind = "cooldown" | "daily";
 
@@ -22,7 +11,6 @@ export interface TaskDef {
 }
 
 export const TASKS: TaskDef[] = [
-  // --- Short loop. the ones actually worth a notification ---
   {
     id: "birdhouse",
     name: "Birdhouse run",
@@ -48,7 +36,6 @@ export const TASKS: TaskDef[] = [
     defaultOn: false,
   },
 
-  // --- Long loop. useful to see, not worth interrupting you for ---
   {
     id: "tree",
     name: "Tree run",
@@ -82,7 +69,6 @@ export const TASKS: TaskDef[] = [
     defaultOn: false,
   },
 
-  // --- Daily reset, 00:00 UTC ---
   {
     id: "zaff",
     name: "Zaff battlestaves",

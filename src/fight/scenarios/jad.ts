@@ -13,15 +13,11 @@ import {
 import { DEFAULT_LOADOUT, maxHit, hitChance } from "../engine/loadout";
 import type { Loadout } from "../engine/loadout";
 
-// TzTok-Jad on a tile grid. The full fight: read the telegraph and flip the
-// overhead before the hit lands, then at half HP kite the healers off Jad while
-// staying OUT of his melee range (get adjacent and he adds an instant melee).
 export function createJadScenario(
   loadout: Loadout = DEFAULT_LOADOUT,
   reactionTicks = 2,
   seed = 12345,
 ): GameState {
-  // Jad centred near the top; player starts near the bottom, at safe distance.
   const jadPos = { x: Math.floor((GRID_W - JAD_SIZE) / 2), y: 1 };
   const playerPos = { x: Math.floor(GRID_W / 2), y: GRID_H - 2 };
 

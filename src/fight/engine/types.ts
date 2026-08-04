@@ -1,8 +1,6 @@
 export type Overhead = "none" | "magic" | "range" | "melee";
 export type AttackStyle = "magic" | "range" | "melee";
 
-// All positions are TILE coordinates. Multi-tile NPCs (Jad) store their
-// top-left tile; `size` gives the square footprint.
 export interface Vec {
   x: number;
   y: number;
@@ -36,7 +34,6 @@ export interface Npc {
   size: number; // tile footprint (5 = Jad, 1 = healer)
   attackSpeed: number;
   attackCd: number;
-  // Jad's telegraphed attack (magic/range). Melee is instant, never telegraphed.
   windup: { style: AttackStyle; landsOn: number } | null;
   target: "jad" | "player" | null; // healer intent
   aggro: boolean; // healer pulled onto the player
@@ -51,7 +48,6 @@ export interface Projectile {
   landsOn: number;
 }
 
-// A player action, applied at the START of the next tick, never instantly.
 export interface PlayerInput {
   setPrayer?: Overhead;
   click?: Vec; // a clicked tile: attack an NPC there, else walk to it
@@ -69,7 +65,5 @@ export interface GameState {
   healersSpawned: boolean;
   log: string[];
   stats: { blocked: number; mispray: number; attacks: number };
-  // Per-run tuning. Reaction window (ticks from telegraph to hit) lives here so
-  // it's configurable per fight. the whole difficulty of the drill.
   config: { magicDelay: number; rangeDelay: number };
 }

@@ -14,12 +14,8 @@ let store: Store = load();
 
 type Tab = "dailies" | string; // string = a route id
 let tab: Tab = (localStorage.getItem("osrs-companion:tab") as Tab) || "dailies";
-// The market tab used to be called "flips". Migrate rather than dumping anyone
-// who had it open back to Dailies.
 if (tab === "flips") tab = "market";
 
-// Tracks readiness between ticks so a notification fires on the transition into
-// ready, not every second while it sits there ready.
 const wasReady = new Map<string, boolean>();
 for (const t of TASKS) {
   wasReady.set(t.id, isReady(t, store[t.id], Date.now()));
@@ -65,7 +61,7 @@ function tabBar(): HTMLElement {
     ["dailies", "Dailies"],
     ...ROUTES.map((r) => [r.id, r.name] as [Tab, string]),
     ["market", "Market"],
-    ["fight", "Fire cape"],
+    ["fight", "Fire cape (WIP)"],
   ];
   for (const [id, label] of items) {
     const b = document.createElement("button");
@@ -104,8 +100,6 @@ function footer(): HTMLElement {
 }
 
 function draw() {
-  // The fight tab runs an animation loop and a window key listener, so it has
-  // to be shut down before its DOM is thrown away. Safe no-op otherwise.
   fightview.stop();
   geview.stop();
 
@@ -129,8 +123,6 @@ function draw() {
   }
 }
 
-// One tick a second: check for ready transitions, then redraw countdowns.
-// Notifications fire regardless of which tab you're looking at.
 function tick() {
   const now = Date.now();
   for (const t of TASKS) {

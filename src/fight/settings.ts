@@ -9,9 +9,6 @@ import {
 import type { ReactionPreset } from "./engine/constants";
 import { GEAR_TIERS } from "./data/presets";
 
-// A DOM panel (kept off the canvas, typing numbers into a canvas is misery)
-// where you pick a recommended setup or punch in your real ranged loadout.
-// Live-previews max hit / accuracy vs Jad / DPS, and restarts the fight on Apply.
 export function createSettingsPanel(
   initial: Loadout,
   onApply: (l: Loadout, reactionTicks: number) => void,
@@ -80,8 +77,6 @@ export function createSettingsPanel(
     controls[key] = s;
   };
 
-  // Gear-tier picker (fills every field below). Full per-slot breakdown and
-  // level requirements for each tier live in the Gear tab of the guide.
   const tierNote = document.createElement("p");
   tierNote.className = "hint";
 
@@ -140,7 +135,6 @@ export function createSettingsPanel(
   num("Ranged attack bonus", "rangedAttackBonus", 0, 400);
   num("Ranged strength bonus", "rangedStrengthBonus", 0, 400);
 
-  // Reaction window difficulty (a training dial, not part of the loadout).
   {
     const row = document.createElement("label");
     row.textContent = "Difficulty";

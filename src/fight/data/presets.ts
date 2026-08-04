@@ -1,11 +1,5 @@
 import type { Loadout } from "../engine/loadout";
 
-// Ranged gear progression by wealth tier, from the wiki's Fight Caves and
-// Inferno equipment recommendations. Level requirements are stable game data.
-// The two bonus TOTALS are estimates (aggregated across a full setup, not read
-// off one item page), so always overwrite them with your real Equipment Stats
-// numbers for a 1:1 damage match. Every tier is flagged accordingly in the UI.
-
 export interface GearTier {
   wealth: string;
   reqs: string;

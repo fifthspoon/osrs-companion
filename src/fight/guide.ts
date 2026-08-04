@@ -1,10 +1,5 @@
 import { GEAR_TIERS } from "./data/presets";
 
-// Per-wave strategy companion. Mechanics and tactics compiled from the OSRS
-// Wiki (Fight_Caves, Fight_Caves/Strategies, Inferno, Inferno/Strategies and
-// the individual monster pages). Meant to sit open beside the sim so the
-// trainer doubles as a reference you can actually run the cape from.
-
 interface Section {
   title: string;
   lines: string[];
@@ -278,8 +273,6 @@ function gearSections(): Section[] {
   return out;
 }
 
-// Returns the panel rather than mounting itself, so the companion's tab system
-// owns where it goes and can tear it down cleanly.
 export function createGuidePanel(): HTMLElement {
   const panel = document.createElement("div");
   panel.className = "guide";

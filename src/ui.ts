@@ -150,8 +150,6 @@ function waitingRow(t: TaskDef, store: Store, now: number, h: Handlers): HTMLEle
   return row;
 }
 
-// Shown when everything is on cooldown. Points at the single soonest thing
-// rather than a wall of timers, so there's still exactly one thing to look at.
 function nothingReady(waiting: TaskDef[], store: Store, now: number): HTMLElement {
   const el = document.createElement("section");
   const card = document.createElement("div");
@@ -182,8 +180,6 @@ function emptyState(): HTMLElement {
   return el;
 }
 
-// Turning tasks off is the most important customisation here. Only track what
-// you actually do, so the list never becomes noise you learn to ignore.
 function taskPicker(store: Store, h: Handlers): HTMLElement {
   const el = document.createElement("details");
   el.className = "picker";

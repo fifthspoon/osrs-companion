@@ -1,8 +1,3 @@
-// Run routes. Every stop is a teleport, so the "path" is a teleport sequence,
-// not a walking route. The order below is the wiki's recommended one.
-//
-// Order matters far less than completeness. the real failure is forgetting a
-// stop, not visiting them in a suboptimal sequence.
 
 export interface Stop {
   id: string;
@@ -12,7 +7,6 @@ export interface Stop {
   requires?: string;
   patches: string;
   diseaseFree?: boolean;
-  // In-game world coordinates. These drive placement on the real map image.
   world: { wx: number; wy: number };
 }
 
@@ -115,4 +109,3 @@ export const HERB_RUN: RouteDef = {
 };
 
 export const ROUTES: RouteDef[] = [HERB_RUN];
-

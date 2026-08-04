@@ -225,6 +225,36 @@ is centred. Without this you can drag the world completely off screen and be lef
 staring at empty background with no cue which way back, which reads as the map
 being broken.
 
+## Map extent and the stage shape
+
+`WORLD_BOUNDS` is `minX 960, minY 2048, maxX 4032, maxY 4224`, and those are the
+real edges, verified against the server rather than guessed. Tile column 30 exists
+and 29 returns 404; column 125 exists and 126 returns 404; row 64 exists and 63
+returns 404; row 131 exists and 132 returns 404.
+
+It was previously `minX 1024, maxX 4096`, which was wrong at both ends at once. It
+clipped two real tile columns off the west, so the map had no ocean margin on that
+side, and it padded 64 empty squares onto the east. Centring that rect therefore
+pushed the whole map visibly left. If the map ever looks off centre, suspect these
+numbers before you suspect the transform.
+
+The same numbers appear in `scripts/fetch-tiles.mjs` and `scripts/fetch-labels.mjs`.
+Change all of them together. `fetch-icons.mjs` derives its extent from the tiles on
+disk instead, so it needs no update.
+
+**`.wmstage` carries `aspect-ratio: 24576 / 17408`, which is those bounds in base
+pixels.** That is what makes a fitted map fill the stage exactly, so the border
+sits flush instead of leaving a black bar on whichever axis `fit()` did not bind.
+It replaced a `height: min(72vh, 760px)` that had no relationship to the map's
+shape and so could never line up. **If the bounds change, change this ratio too**,
+or the black bars come back.
+
+Matching the aspect is necessary but not sufficient, because zooming out below the
+fit still shrinks the map inside its frame and brings the borders back. So
+`minZoom` is the fit zoom, recomputed in `fit()` on every resize, and both the
+wheel handler and `clampView()` clamp to it. There is no reason to zoom further
+out than the whole map anyway.
+
 ## The icon overlay
 
 The wiki bakes its map icons into the tile pixels at a **fixed size per tile**,
@@ -329,10 +359,19 @@ real map changes rather than noise.
 ### Other constraints
 
 - **The overlay must never be smaller on screen than the baked icon underneath**,
-  or you see a ghost pair instead of one icon. `syncIcons()` floors the scale at
-  `(1 << (NATIVE_Z - pickTileZoom(zoom))) * zoom`, which is how much the current
-  tile level is being stretched. At full zoom the two are both 30 px and ours
-  covers exactly.
+  or you see a ghost pair instead of one icon. **Do not solve that by flooring the
+  scale at the baked size.** That was tried and it silently undoes the whole
+  feature: whenever the floor binds, the icon is pinned to exactly the baked size
+  and therefore scales exactly like the unscaled icons did. It binds at full zoom,
+  which is precisely where anyone looks, so icons appeared not to scale at all
+  while pins and labels were fine.
+
+  Instead `iconScale()` uses `growth(perSquare, 3, 1)`, a steeper coefficient than
+  the 0.75 that labels and pins use. That makes the curve exceed the baked size at
+  every reachable zoom on its own, so covering falls out of the maths and no floor
+  is needed. Icons run 17 px to 38 px across the visible range against a baked
+  11 px to 30 px. If you change the coefficient, re-check it still dominates
+  `(1 << (NATIVE_Z - pickTileZoom(zoom))) * zoom` everywhere.
 - The overlay is hidden below `ICON_MIN_PER_SQUARE` (1.5 px per game square), a
   load and legibility limit: worst case on screen is around 510 icons there,
   comparable to the 507 labels, against 853 at 1.0 and 1245 at 0.5.

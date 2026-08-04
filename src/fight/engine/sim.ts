@@ -22,8 +22,6 @@ import { chebyshev, distToBlock, inBounds, stepToward, tileCenter, blockCenter }
 const jadMaxHit = (style: AttackStyle): number =>
   style === "magic" ? JAD_MAX_HIT_MAGIC : style === "range" ? JAD_MAX_HIT_RANGE : JAD_MAX_HIT_MELEE;
 
-// The pure heart of the simulator: step(state, inputs) -> nextState.
-// Deterministic; a tick resolves in a fixed phase order so timing is faithful.
 export function step(prev: GameState, inputs: PlayerInput[]): GameState {
   const s: GameState = structuredClone(prev);
   s.tick += 1;
@@ -40,7 +38,6 @@ export function step(prev: GameState, inputs: PlayerInput[]): GameState {
     return j ? distToBlock(t, j.pos, j.size) === 0 : false;
   };
 
-  // Phase 1: apply queued inputs.
   for (const inp of inputs) {
     if (inp.setPrayer !== undefined) s.player.overhead = inp.setPrayer;
     if (inp.toggleRun) s.player.running = !s.player.running;
@@ -63,7 +60,6 @@ export function step(prev: GameState, inputs: PlayerInput[]): GameState {
 
   const j = jad();
 
-  // Phase 2: NPC actions.
   for (const npc of s.npcs) {
     if (npc.hp <= 0) continue;
     if (npc.kind === "jad") {
@@ -72,7 +68,6 @@ export function step(prev: GameState, inputs: PlayerInput[]): GameState {
         const adjacent = distToBlock(s.player.pos, npc.pos, npc.size) <= MELEE_RANGE;
         let style: AttackStyle;
         if (adjacent) {
-          // Adjacent -> melee is on the table, and it's INSTANT (no telegraph).
           const r = nextRandom(s.seed);
           s.seed = r.seed;
           style = r.value < 1 / 3 ? "melee" : r.value < 2 / 3 ? "magic" : "range";
@@ -102,7 +97,6 @@ export function step(prev: GameState, inputs: PlayerInput[]): GameState {
         npc.windup = null;
       }
     } else {
-      // Healer: heal Jad if adjacent to him, or hit the player if aggro'd + adjacent.
       npc.target = npc.aggro ? "player" : "jad";
       npc.attackCd -= 1;
       if (npc.attackCd <= 0) {
@@ -122,14 +116,12 @@ export function step(prev: GameState, inputs: PlayerInput[]): GameState {
     }
   }
 
-  // Phase 3: movement.
   movePlayer(s, blocked);
   for (const npc of s.npcs) {
     if (npc.kind !== "healer" || npc.hp <= 0) continue;
     moveHealer(s, npc, blocked);
   }
 
-  // Phase 4: hit resolution. overhead active RIGHT NOW is what counts.
   for (const p of s.projectiles) {
     if (p.landsOn !== s.tick) continue;
     if (s.player.overhead === p.style) {
@@ -145,7 +137,6 @@ export function step(prev: GameState, inputs: PlayerInput[]): GameState {
   }
   s.projectiles = s.projectiles.filter((p) => p.landsOn > s.tick);
 
-  // Player attack on current target.
   const target = s.player.targetId != null ? s.npcs.find((n) => n.id === s.player.targetId && n.hp > 0) : undefined;
   if (target) {
     s.player.attackCd -= 1;
@@ -161,14 +152,12 @@ export function step(prev: GameState, inputs: PlayerInput[]): GameState {
     s.player.targetId = null;
   }
 
-  // Healers spawn once, at Jad half HP.
   if (!s.healersSpawned && j && j.hp <= JAD_HEALER_SPAWN_HP) {
     spawnHealers(s, j);
     s.healersSpawned = true;
     s.log.unshift(`t${s.tick}: ${JAD_HEALER_COUNT} healers spawned, kite them off Jad!`);
   }
 
-  // Prayer drain.
   if (s.player.overhead !== "none") {
     if (s.tick % PRAYER_DRAIN_TICKS === 0) s.player.prayer -= 1;
     if (s.player.prayer <= 0) {
@@ -202,7 +191,6 @@ function movePlayer(s: GameState, blocked: (t: Vec) => boolean) {
     }
     let next = stepToward(p.pos, p.moveTarget);
     if (blocked(next)) {
-      // Slide along whichever single axis is still open.
       const nx = { x: next.x, y: p.pos.y };
       const ny = { x: p.pos.x, y: next.y };
       if (!blocked(nx)) next = nx;
@@ -238,7 +226,6 @@ function moveHealer(s: GameState, npc: Npc, blocked: (t: Vec) => boolean) {
 }
 
 function spawnHealers(s: GameState, jad: Npc) {
-  // Spawn around Jad's footprint corners.
   const spots: Vec[] = [
     { x: jad.pos.x - 1, y: jad.pos.y },
     { x: jad.pos.x + jad.size, y: jad.pos.y },
