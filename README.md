@@ -9,6 +9,8 @@ and it's why there's nothing here that could trip a ToS line.
 
 ## Run
 
+Needs Node 18 or newer.
+
 ```bash
 npm install
 node scripts/fetch-tiles.mjs     # one time, ~34 MB of map tiles
@@ -159,7 +161,9 @@ The full picture is in [ATTRIBUTION.md](ATTRIBUTION.md), including why the fetch
 step exists.
 
 No game assets, no decompiled code, nothing from private server repos. If you
-contribute, hold that line.
+contribute, hold that line. [CONTRIBUTING.md](CONTRIBUTING.md) has the rest: the
+map coordinate model, the tile traps, the GE tax rules, and the gotchas that look
+like bugs and are not.
 
 ## Roadmap
 
