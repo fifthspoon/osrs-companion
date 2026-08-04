@@ -59,7 +59,7 @@ export function tileBaseSize(z: number): number {
 }
 
 export function tileUrl(z: number, tx: number, ty: number): string {
-  return `/tiles/${z}/${tx}_${ty}.png`;
+  return `/tiles-clean/${z}/${tx}_${ty}.png`;
 }
 
 export function tileOrigin(z: number, tx: number, ty: number) {

@@ -54,6 +54,17 @@ locally from your own copy rather than taken from anywhere. It is also plain
 factual data: where a thing is, which is not creative expression. It stays
 gitignored regardless, on the same reasoning as everything else here.
 
+### Cleaned tiles
+
+`scripts/clean-tiles.mjs` writes `public/tiles-clean/`, a copy of your downloaded
+tiles with the wiki's baked-in map icons painted out so the app can draw its own
+at any size. It is gitignored like everything else here.
+
+It is derived from tiles that were already yours, by a script in this repository,
+and `public/tiles/` is never modified. Nothing new is downloaded and nothing extra
+is redistributed. The originals stay on disk so a report of a missing icon can be
+checked against what the wiki actually rendered.
+
 ### Fight Caves simulation
 
 `src/fight/` is an original reimplementation. Every mechanic in it came from

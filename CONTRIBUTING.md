@@ -89,6 +89,7 @@ npm install
 node scripts/fetch-tiles.mjs     # ~34 MB of map tiles, resumable
 node scripts/fetch-labels.mjs    # place names into public/labels.json
 node scripts/fetch-icons.mjs     # scans the tiles for icons, run AFTER fetch-tiles
+node scripts/clean-tiles.mjs     # erases the baked icons, run AFTER fetch-icons
 npm run dev                      # http://localhost:5273
 npm run build                    # tsc --noEmit then vite build
 ```
@@ -190,40 +191,42 @@ Current-and-baked was chosen deliberately, because an accurate map with Varlamor
 on it beats being able to hide icons. There is no bare variant on the current
 version: `base`, `terrain`, `plain`, `raw` and `noicons` all 404.
 
-## Map sizing and panning
+## Map overlay sizing
 
-Pins and labels sit inside a layer that is scaled by `zoom`, so anything drawn on
-them has to be counter-scaled or it shrinks with the terrain.
+**Everything drawn over the map is a constant size on screen and does not change
+with zoom.** Icons, labels and pins all work this way. Do not reintroduce a
+zoom-dependent size curve.
 
-A flat `1/zoom` counter-scale is the obvious move and it reads badly. It pins
-things to a constant size on screen, so at full zoom the terrain is at 16 px per
-game square and the name or marker sitting on it is still the size it was at world
-view, which looks tiny. So both grow with zoom instead, through `growth()`: a cube
-root of pixels-per-square, clamped at both ends. Cube root because linear growth is
-far too aggressive across a 60x zoom range, a floor so nothing becomes unreadable,
-a ceiling so nothing swamps the map.
+Earlier versions grew each overlay with zoom through a clamped cube root called
+`growth()`. It was removed because it is both non-standard and bad to use.
+Leaflet, Mapbox and Google all render markers at a fixed screen size by default;
+scaling with zoom is the opt-in exception, not the norm. And in use it means any
+size you choose is only correct at the zoom you chose it at, so you end up
+rescaling every time you zoom. That is the complaint that killed it.
 
-- `labelScale()` uses a 2.2 ceiling.
-- `pinScale()` uses 2.6, higher because a pin is a target you click rather than
-  text you read. In practice the reachable zoom range tops out at 1.89, so that
-  ceiling is a safety cap rather than something you hit.
-- Base sizes live in CSS on `.wmpindot` and `.wmlabel`. A 26 px dot renders at
-  49 px at full zoom. Change the CSS number to resize everything, change the
-  `0.75` coefficient in `growth()` to change how fast it grows.
+So the three sliders are absolute sizes, not multipliers on a curve:
 
-On top of that, `sizePrefs` holds user multipliers for pins and labels, persisted
-under `osrs-companion:mapsize:v1` and clamped to 0.5x to 3x on both write and read,
-so a hand-edited or corrupt value cannot break the map. The sliders call `apply()`
-directly rather than triggering a rerender, because dragging one should feel
+- Icons are `ICON_BASE_PX` (22) times the icon slider, in screen pixels.
+- Labels and pins are their CSS size times their slider, applied as
+  `sizePrefs.x / zoom` so the layer scale cancels out exactly.
+
+`sizePrefs` persists under `osrs-companion:mapsize:v1`, clamped 0.5x to 3x on
+both read and write so a hand-edited value cannot break the map. The sliders call
+`apply()` directly instead of triggering a rerender, so dragging one is
 continuous rather than rebuilding the DOM per input event.
 
-**Panning is clamped, and the clamp lives in `apply()` on purpose.** `apply()` is
-the single funnel that writes the layer transform, so clamping there covers drag,
-wheel zoom and fit alike without each having to remember. When the world is larger
-than the viewport the viewport is kept inside it, and when it is smaller the world
-is centred. Without this you can drag the world completely off screen and be left
-staring at empty background with no cue which way back, which reads as the map
-being broken.
+## Panning limits
+
+**The pan clamp lives in `apply()` on purpose.** That is the single funnel writing
+the layer transform, so it covers drag, wheel zoom and fit alike without each
+having to remember. When the world is larger than the viewport the viewport is
+kept inside it; when smaller, the world is centred. Without it you can drag the
+world entirely off screen and be left staring at empty background with no cue
+which way back, which reads as the map being broken.
+
+Zoom out is clamped to the fit zoom, recomputed in `fit()` on every resize. Below
+that the map is smaller than its own frame, which puts black bars back around it.
+
 
 ## Map extent and the stage shape
 
@@ -356,28 +359,64 @@ At those values: **96.1% recall**, and the 9.8% of detections the 2019 list does
 not know about all score 80% or better on pixel match, so they are seven years of
 real map changes rather than noise.
 
+### The baked icons are erased, not covered
+
+An overlay drawn on top of the wiki's baked icons can never be smaller than them,
+or the baked one pokes out around it. Two ways of hiding that were tried and both
+failed:
+
+- **Flooring the overlay scale at the baked size** silently undoes the feature.
+  Wherever the floor binds, the icon is pinned to exactly the baked size and so
+  scales exactly like the unscaled icons did. It binds at full zoom, which is
+  where anyone actually looks.
+- **Making the overlay always bigger** works until someone picks a small size,
+  which they will, and then the baked icon reappears around it.
+
+So `scripts/clean-tiles.mjs` removes them instead. It reads the placements, finds
+each baked icon in the tiles **at all four zoom levels**, and paints it out by
+pulling terrain radially inward from just outside the icon's disc. Output goes to
+`public/tiles-clean/`, which is what `tileUrl()` serves. **`public/tiles/` is
+never modified**, so the originals stay available to cross-reference against if
+someone reports a missing icon.
+
+Run order matters: `fetch-tiles` then `fetch-icons` then `clean-tiles`, because
+each needs the previous one's output.
+
+**Measured: 9673 of 12456 erased**, that being 3114 icons across 4 levels. The
+2783 misses are expected to be concentrated at z0 to z2, where the world is
+squeezed into far fewer pixels so icons overlap each other and the frame is
+occluded. That is a hypothesis, not a measurement, and it means some baked icons
+survive at low zoom.
+
+**Trap that cost real time:** derive the shared frame from the **catalogued
+sprites only**. The extracted `unlisted-*.png` sprites are lifted off the map and
+have real terrain in them, so including them means no pixel is common to all
+sprites, the frame comes out empty, nothing matches, and the script cheerfully
+reports success having erased zero icons.
+
 ### Other constraints
 
-- **The overlay must never be smaller on screen than the baked icon underneath**,
-  or you see a ghost pair instead of one icon. **Do not solve that by flooring the
-  scale at the baked size.** That was tried and it silently undoes the whole
-  feature: whenever the floor binds, the icon is pinned to exactly the baked size
-  and therefore scales exactly like the unscaled icons did. It binds at full zoom,
-  which is precisely where anyone looks, so icons appeared not to scale at all
-  while pins and labels were fine.
+- **Every icon is drawn at every zoom.** There is no visibility gating and there
+  should not be. Two attempts at thinning were both rejected in use:
+  - *Screen-space collision*, where an icon was dropped if a cell was already
+    taken. The winner of a cell depended on iteration order, so which icon won
+    changed as you panned. Icons popped in and out and fought over z-order.
+  - *Precomputed importance tiers*, shown by zoom. Stable, and still wrong to use:
+    icons appearing as you zoom in reads as inconsistency, not as decluttering,
+    because you cannot tell whether an icon is absent or merely not yet earned.
 
-  Instead `iconScale()` uses `growth(perSquare, 3, 1)`, a steeper coefficient than
-  the 0.75 that labels and pins use. That makes the curve exceed the baked size at
-  every reachable zoom on its own, so covering falls out of the maths and no floor
-  is needed. Icons run 17 px to 38 px across the visible range against a baked
-  11 px to 30 px. If you change the coefficient, re-check it still dominates
-  `(1 << (NATIVE_Z - pickTileZoom(zoom))) * zoom` everywhere.
-- The overlay is hidden below `ICON_MIN_PER_SQUARE` (1.5 px per game square), a
-  load and legibility limit: worst case on screen is around 510 icons there,
-  comparable to the 507 labels, against 853 at 1.0 and 1245 at 0.5.
+  `fetch-icons.mjs` still writes a tier per icon from its `TIER` table, and the
+  viewer ignores it. It is left in the data because it costs nothing and is the
+  obvious raw material if thinning is ever wanted, but **anything that hides an
+  icon at some zooms and not others needs a real reason.**
+- Icons render to a **canvas**, not DOM. Leaflet's own guidance is that marker
+  counts into the thousands cause slow rendering and panning, and there are 3114
+  here. The canvas sits between the tile layer and the overlay layer, which is why
+  there are two `.wmlayer` elements getting the same transform: labels and pins
+  stay as DOM above it so they remain clickable.
 - Icons on upper floors are not a problem here the way they were with the
   published list, because the scan only ever sees the ground level tiles.
-- `pngjs` is a devDependency for this script alone. It never reaches the browser.
+- `pngjs` is a devDependency for the scripts alone. It never reaches the browser.
 
 ## Labels
 
@@ -404,15 +443,24 @@ signals are needed.
 
 ## The Market tab
 
+**Full write-up in [docs/market.md](docs/market.md).** Read that before touching
+`src/market/`. What follows is the short version.
+
+Two views behind a persisted toggle. **Basic** fills your Grand Exchange offer
+slots with a spend plan for the gp you actually have, and is the only thing on
+screen. **Advanced** is the full table with every column and filter.
+
 Data is the wiki's real-time prices API at `prices.runescape.wiki/api/v2/osrs`,
 which is free, needs no key, and sends `Access-Control-Allow-Origin: *`. The
 browser calls it directly, so this stays a static local page with no server and no
-proxy. Endpoints used: `/latest`, `/mapping`, `/1h`.
+proxy. Endpoints used: `/mapping`, `/latest`, `/1h`, `/24h`, `/volumes`,
+`/timeseries`.
 
-The wiki asks for a descriptive User-Agent, which browsers forbid setting. Their
-block list targets bare `python-requests` and `curl` rather than real browsers,
-and this is one page making three cached requests a minute. If that ever becomes a
-problem the fix is a fetch script like the other two, not a proxy.
+**v2 `/timeseries` is not shaped like v1.** It takes `?id=&timestep=&lookback=`,
+and `lookback` accepts only `6h`, `24h`, `7d`, `30d`, `6m` and `1y`. Every other
+value 400s, including `1d`, `1w`, `1m`, `3m` and `max`. It also rejects requests
+with no descriptive User-Agent, so a bare `curl` check of that one endpoint needs
+a browser User-Agent set explicitly. The other five do not enforce it.
 
 **The tax is 2%, not 1%.** It changed on 29 May 2025 in the Yama CAs update. Many
 third party flip sites still use 1%, which overstates every margin and overstates
@@ -424,12 +472,25 @@ it worst on expensive items. The rules, all implemented in `geTax()`:
 - 48 exempt item IDs in `EXEMPT_IDS`. Mostly cheap early-game things where the tax
   would round to nothing anyway, **but Old school bond (13190) is in there and is
   worth millions**, so that one entry is the difference between right and
-  confidently wrong.
+  confidently wrong. Every teleport tablet is on the list too.
 
-**Volume and price age are filters, not decoration.** A margin on an item that
+**Volume and price age are gates, not decoration.** A margin on an item that
 trades twice a day is fiction: it will never fill. Staleness is judged on the
 *older* of the two sides, because a fresh buy price against a six hour old sell
 price still describes a spread that no longer exists.
+
+**`high` and `low` are two separate trades at two separate moments.** On a
+volatile item the price drifts between them and manufactures a margin that was
+never there. This is why the `outlier` gate exists, checking both prints against
+what actually traded in the last hour. It was added after the allocator
+recommended 1.1b into a phantom 9.8% bond margin that neither the staleness gate
+nor the spread gate caught. Do not remove it. The reasoning is in
+[docs/market.md](docs/market.md).
+
+**Buying more of a flow-bound item does not raise your hourly rate.** Doubling the
+quantity doubles both the profit and the time, so the rate is unchanged and the
+only effect is tying up gp another slot could have used. Quantity is therefore
+sized to the user's check-in interval, not to their bank.
 
 ## External facts that rot silently
 
@@ -440,9 +501,9 @@ whenever a number looks off:
 
 | Fact | Where | How to check |
 |---|---|---|
-| GE tax rate, cap, exemptions | `src/ge.ts` | The wiki `Grand_Exchange` page, Tax section |
+| GE tax rate, cap, exemptions | `src/market/tax.ts` | The wiki `Grand_Exchange` page, Tax section |
 | Map tile version | `scripts/fetch-tiles.mjs` `VERSION` | The curl above |
-| Prices API shape | `src/ge.ts` | `curl -s https://prices.runescape.wiki/api/v2/osrs/latest` |
+| Prices API shape | `src/market/api.ts` | `curl -s https://prices.runescape.wiki/api/v2/osrs/latest` |
 | Tile max native zoom | `src/worldmap.ts` `NATIVE_Z` | z4 should still 404 |
 
 ## Architecture
@@ -456,23 +517,34 @@ whenever a number looks off:
 | `src/ui.ts` | Dailies rendering |
 | `src/routes.ts` | Route definitions. Each stop carries real world coordinates |
 | `src/routeview.ts` | Route tab: next-stop card, map, stop list |
+| `src/mapview.ts` | Map tab: the standalone map, no route on it |
 | `src/worldmap.ts` | Exact world/pixel transform, tile geometry, markers |
-| `src/worldmapview.ts` | Tile viewer, pan/zoom, pins, labels, markers |
+| `src/map/` | The reusable map component. See `docs/map.md` |
 | `src/runstate.ts` | Progress through a single run |
-| `src/ge.ts` | Prices API client, GE tax, flip maths. Pure, no DOM |
-| `src/geview.ts` | Market tab: headline pick, table, filter panel |
+| `src/market/tax.ts` | GE tax rate, cap and the 48 exempt IDs. Pure |
+| `src/market/api.ts` | Prices API client, six endpoints, TTL caching. Pure |
+| `src/market/flip.ts` | Candidates, gates, position sizing, the rate model. Pure |
+| `src/market/allocate.ts` | GE slot allocator, three strategies, best wins. Pure |
+| `src/market/fmt.ts` | gp, count, age and duration formatting. Pure |
+| `src/market/settings.ts` | Market settings, defaults, persistence, the `:ge:v1` migration |
+| `src/market/view.ts` | Market tab shell: mode toggle, gates panel, refresh timer |
+| `src/market/basic.ts` | Basic view: the slot plan |
+| `src/market/advanced.ts` | Advanced view: table, column picker, row expand |
 | `src/fightview.ts` | Fight tab: owns the rAF loop and its teardown |
 | `src/fight/engine/` | The tick sim. `sim.ts` is `step(state, inputs)`, pure |
 | `src/fight/` | Renderer, input, guide and loadout panels |
 | `scripts/fetch-tiles.mjs` | Pulls the tile pyramid. Resumable |
 | `scripts/fetch-labels.mjs` | Builds `public/labels.json` from the wiki API |
 | `scripts/fetch-icons.mjs` | Scans the tiles for icon sprites, builds `public/mapicons.json` |
+| `scripts/clean-tiles.mjs` | Erases the baked icons into `public/tiles-clean/`, leaves originals |
 
 localStorage keys: `osrs-companion:v1` (tasks), `:run:v1`, `:markers:v1`,
-`:labels:v1` (label toggle), `:ge:v1` (market filters), `:tab`.
+`:labels:v1` (label toggle), `:market:v1` (market settings),
+`:market:cache:*` (endpoint caches, safe to delete), `:tab`.
 
 `:calib:v1` and `:map:v1` are **dead keys** from the old flat-map era. Nothing
-reads them. Harmless if present in an old browser profile.
+reads them. Harmless if present in an old browser profile. `:ge:v1` is read once
+to carry a pre-existing bank and freshness setting into `:market:v1`, then ignored.
 
 The `:tab` value `"flips"` is migrated to `"market"` on load.
 
@@ -511,7 +583,7 @@ The `:tab` value `"flips"` is migrated to `"market"` on load.
   pointer did not move past a 3 px threshold. This exists so the map can be
   repositioned during add-marker mode without dropping a marker by accident.
 - **Tabs that own a loop must be stopped in `draw()`.** `main.ts` calls
-  `fightview.stop()` and `geview.stop()` before wiping the DOM. Skip that and the
+  `fightview.stop()` and `market.stop()` before wiping the DOM. Skip that and the
   fight's rAF loop keeps drawing into a detached canvas forever, and the market
   keeps polling a view nobody is looking at. Any new tab that starts a loop needs
   the same treatment.
@@ -531,12 +603,13 @@ const m = await import('/src/worldmap.ts?t=' + Date.now());
 m.worldToPx(3222, 3218);        // { x: 25776, y: 9072 }  Lumbridge
 
 // GE tax boundaries. Every one of these has bitten a paid competitor
-const g = await import('/src/ge.ts?t=' + Date.now());
+const g = await import('/src/market/tax.ts?t=' + Date.now());
 g.geTax(49, 99999);             // 0        rounds down
 g.geTax(50, 99999);             // 1
 g.geTax(250e6, 99999);          // 5000000  the cap, reached exactly here
 g.geTax(1e9, 99999);            // 5000000  capped
 g.geTax(8e6, 13190);            // 0        bond is exempt
+g.geTax(3e6, 8007);             // 0        Varrock teleport tab is exempt
 
 // readiness maths
 const s = await import('/src/store.ts?t=' + Date.now());

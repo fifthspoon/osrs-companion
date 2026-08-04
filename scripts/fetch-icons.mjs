@@ -28,6 +28,18 @@ const PROBE = process.env.PROBE === "1";
 const EXTRA_SPRITES = [];
 const PROBE_RANGE = [1448, 1900];
 
+const TIER = {
+  bank: 0, altar: 0, farming_patch: 0, grand_exchange: 0, house_portal: 0,
+  transportation: 1, dungeon: 1, dungeon_link: 1, minigame: 1, raids_lobby: 1,
+  slayer_master: 1, task_master: 1, map_link: 1,
+  quest_start: 2, mining_site: 2, fishing_spot: 2, hunter_training: 2,
+  agility_training: 2, "agility_short-cut": 2, furnace: 2, anvil: 2, sawmill: 2,
+  herbalist: 2, farming_shop: 2, general_store: 2, magic_shop: 2, gem_shop: 2,
+  archery_shop: 2, tannery: 2, sandpit: 2, apothecary: 2, brewery: 2,
+};
+const TIER_UNLISTED = 2;
+const TIER_DEFAULT = 3;
+
 if (!existsSync(TILES)) {
   console.error("public/tiles/3 not found. Run: node scripts/fetch-tiles.mjs");
   process.exit(1);
@@ -216,7 +228,7 @@ function scanTile(tx, ty) {
     h.key,
     Math.round((tx * SPAN + h.cx / PPS) * 10) / 10,
     Math.round(((ty + 1) * SPAN - h.cy / PPS) * 10) / 10,
-    Math.round(h.frac * 100),
+    h.key.startsWith("unlisted_") ? TIER_UNLISTED : TIER[h.key] ?? TIER_DEFAULT,
   ]);
 }
 
@@ -275,7 +287,10 @@ await writeFile(
   JSON.stringify({ source: "scanned from tiles", threshold: THRESHOLD, types, icons }),
 );
 
+const perTier = [0, 0, 0, 0];
+for (const ic of icons) perTier[ic[3]]++;
 console.log(`\nwrote ${icons.length} icons across ${Object.keys(counts).length} types to public/mapicons.json`);
+console.log(`tiers: 0=${perTier[0]} 1=${perTier[1]} 2=${perTier[2]} 3=${perTier[3]}  (cumulative ${perTier[0]}, ${perTier[0] + perTier[1]}, ${perTier[0] + perTier[1] + perTier[2]}, ${icons.length})`);
 console.log(
   "most common:",
   Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 10).map(([k, v]) => `${k}=${v}`).join(" "),

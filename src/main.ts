@@ -4,9 +4,10 @@ import { load, save, isReady } from "./store";
 import type { Store } from "./store";
 import { render as renderDailies } from "./ui";
 import { render as renderRoute } from "./routeview";
+import { render as renderMap } from "./mapview";
 import { ROUTES } from "./routes";
 import * as fightview from "./fightview";
-import * as geview from "./geview";
+import * as market from "./market/view";
 import { requestPermission, fire, clear } from "./notify";
 
 const root = document.getElementById("app") as HTMLElement;
@@ -60,6 +61,7 @@ function tabBar(): HTMLElement {
   const items: [Tab, string][] = [
     ["dailies", "Dailies"],
     ...ROUTES.map((r) => [r.id, r.name] as [Tab, string]),
+    ["map", "Map"],
     ["market", "Market"],
     ["fight", "Fire cape (WIP)"],
   ];
@@ -101,7 +103,7 @@ function footer(): HTMLElement {
 
 function draw() {
   fightview.stop();
-  geview.stop();
+  market.stop();
 
   root.innerHTML = "";
   root.appendChild(tabBar());
@@ -112,8 +114,10 @@ function draw() {
 
   if (tab === "dailies") {
     renderDailies(body, store, Date.now(), handlers);
+  } else if (tab === "map") {
+    body.appendChild(renderMap(draw));
   } else if (tab === "market") {
-    body.appendChild(geview.render(draw));
+    body.appendChild(market.render(draw));
   } else if (tab === "fight") {
     body.appendChild(fightview.render());
   } else {

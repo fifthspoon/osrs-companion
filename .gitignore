@@ -9,6 +9,7 @@ dist/
 #
 # Keeping them out means the code here can carry a clean licence.
 public/tiles/
+public/tiles-clean/
 public/labels.json
 public/mapicons/
 public/mapicons.json

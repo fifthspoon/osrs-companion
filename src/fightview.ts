@@ -26,15 +26,10 @@ export function render(): HTMLElement {
   const wrap = document.createElement("div");
   wrap.className = "fightwrap";
 
-  const wip = document.createElement("div");
-  wip.className = "wipbanner";
-  const wipHead = document.createElement("strong");
-  wipHead.textContent = "Heavily work in progress. Use at your own risk.";
-  wip.appendChild(wipHead);
-  const wipBody = document.createElement("p");
-  wipBody.textContent =
-    "This sim is unfinished and not verified against the real fight. Timings, damage and behaviour may all be wrong. Practise here if it helps, but do not treat anything it tells you as accurate, and do not plan a real attempt around it.";
-  wip.appendChild(wipBody);
+  const wip = document.createElement("p");
+  wip.className = "note";
+  wip.textContent =
+    "Work in progress. The fight runs, but it is rough and unpolished, and the numbers have not been checked against the real thing.";
   wrap.appendChild(wip);
 
   const canvas = document.createElement("canvas");

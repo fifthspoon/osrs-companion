@@ -1,5 +1,6 @@
 import type { RouteDef } from "./routes";
-import * as worldmapview from "./worldmapview";
+import { createMap } from "./map/component";
+import type { MapPin } from "./map/component";
 import * as run from "./runstate";
 
 export function render(route: RouteDef, rerender: () => void): HTMLElement {
@@ -56,15 +57,32 @@ export function render(route: RouteDef, rerender: () => void): HTMLElement {
   }
   el.appendChild(card);
 
-  const ctx: worldmapview.ViewCtx = {
-    visited: (id) => run.isVisited(route.id, id),
-    nextId: next?.id ?? null,
-    onVisit: (id) => {
-      run.toggle(route.id, id);
-      rerender();
-    },
-  };
-  el.appendChild(worldmapview.render(route, ctx, rerender));
+  const pins: MapPin[] = route.stops.map((s, i) => {
+    const visited = run.isVisited(route.id, s.id);
+    const isNext = next?.id === s.id;
+    const cls = [visited ? "done" : "", isNext ? "next" : ""].filter(Boolean).join(" ");
+    return {
+      wx: s.world.wx,
+      wy: s.world.wy,
+      badge: visited ? "✓" : String(i + 1),
+      label: s.name,
+      className: cls || undefined,
+      onClick: () => {
+        run.toggle(route.id, s.id);
+        rerender();
+      },
+    };
+  });
+
+  el.appendChild(
+    createMap({
+      id: `route:${route.id}`,
+      pins,
+      paths: [{ points: route.stops.map((s) => s.world) }],
+      status: `Scroll to zoom, drag to pan. ${route.stops.length} stops placed from world coords.`,
+      onChange: rerender,
+    }),
+  );
 
   const list = document.createElement("ol");
   list.className = "stops";

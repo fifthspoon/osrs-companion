@@ -31,6 +31,7 @@ npm install
 node scripts/fetch-tiles.mjs     # one time, ~34 MB of map tiles
 node scripts/fetch-labels.mjs    # one time, place names
 node scripts/fetch-icons.mjs     # one time, scans the tiles for map icons, ~90s
+node scripts/clean-tiles.mjs     # one time, erases the wiki's baked-in icons
 npm run dev                      # http://localhost:5273
 ```
 
@@ -60,10 +61,13 @@ prefer it clean.
 
 Map icons (banks, altars, farming patches, fishing spots and 100 more types) are
 drawn as their own layer rather than read off the tile pixels. The wiki bakes its
-icons in at a fixed size per tile, which means they shrink every time you zoom in
-and there is nothing you can do about that from the outside. Drawn as a layer they
-hold their size, and there are sliders for pins, icons and labels plus a reset,
-because no single size suits every screen.
+icons into the tiles at a fixed size per tile, so they shrink every time you zoom
+in and there is nothing you can do about that from the outside. Setup erases them
+from your local copy and the app draws its own instead.
+
+**Nothing on the map resizes when you zoom.** Icons, labels and pins each have a
+slider, and the size you pick is the size you get at every zoom level, so you are
+never rescaling things just because you zoomed. There is a reset next to them.
 
 The placements are found by scanning your own downloaded tiles for the icons,
 which is why they are current. The only placement list the wiki publishes is from
@@ -71,6 +75,15 @@ which is why they are current. The only placement list the wiki publishes is fro
 list has 1792, including whole icon types no catalogue contains at all, lifted
 straight off the map. Checked against the list where it is still valid: 96% found,
 and what it found beyond that was real rather than invented.
+
+## Map
+
+The same map on its own tab with no route on it. It is there because a map is worth
+having open on a second monitor whether or not you are doing a run. Everything the
+herb run map does it does: zoom, labels, icons, your own markers, the size sliders.
+
+Markers are shared, so one you drop here shows up on the route maps too. Each map
+remembers its own position, so opening this one does not move your herb run view.
 
 ## Design rules
 
@@ -139,10 +152,13 @@ being a local page with no install and no background service.
 - `src/main.ts` the 1 second tick loop and ready-transition detection.
 - `src/routes.ts` run routes. Each stop carries its real world coordinates.
 - `src/worldmap.ts` the world-to-pixel transform and tile geometry.
-- `src/worldmapview.ts` the tile viewer: pan, zoom, pins, labels, markers.
+- `src/map/` the reusable map component: pan, zoom, pins, labels, markers.
+- `src/mapview.ts` the standalone Map tab.
+- `src/market/` the Market tab: prices API, tax, gates, sizing, slot allocator.
 - `scripts/fetch-tiles.mjs` pulls the map tiles.
 - `scripts/fetch-labels.mjs` rebuilds `public/labels.json` from the wiki.
 - `scripts/fetch-icons.mjs` scans the tiles to build the map icon overlay.
+- `scripts/clean-tiles.mjs` erases the baked icons so the overlay is the only one.
 
 ## Fight Caves trainer
 
@@ -160,23 +176,44 @@ Click to move, click Jad to attack. `1` mage, `2` range, `3` melee, `0` none.
 
 ## Market
 
-Live Grand Exchange margins from the wiki's free real-time prices API, with the
-maths done properly.
+Live Grand Exchange trading off the wiki's free real-time prices API, with the
+maths done properly. Two views behind one toggle.
 
-Two things most flip sites get wrong, and this does not:
+**Basic** is the point of the tab. Tell it what is in your bank and it fills your
+eight Grand Exchange slots with a plan: which item, how many, what to spend, what
+it comes back as. Nothing else on screen. Every empty slot says why it is empty
+rather than leaving you to guess.
 
-- **The tax is 2%, not 1%.** It changed on 29 May 2025. A tool still using the
-  old rate overstates every margin, and overstates it worst on the expensive
-  items you were most likely to act on. Tax here rounds down, caps at 5m at a
-  250m sale price, and knows all 48 exempt items including bonds.
-- **A margin on something that trades twice a day is fiction.** Volume and price
-  age are filters, not decoration. Only items traded in the last 30 minutes with
-  100+ hourly volume are shown, and both numbers are on every row so you can see
-  the judgement rather than trust it.
+**Advanced** is the whole market as a table, twenty sortable columns with a column
+picker, so nobody has to leave for a bigger site.
 
-Set your capital and it ranks by profit per 4 hour buy limit, which is the real
-ceiling on a flip. One recommendation is shown large, the rest sit quietly
-underneath.
+Four things most flip tools get wrong, and this does not:
+
+- **The tax is 2%, not 1%.** It changed on 29 May 2025. A tool still using the old
+  rate overstates every margin, and overstates it worst on the expensive items you
+  were most likely to act on. Tax here rounds down, caps at 5m at a 250m sale
+  price, and knows all 48 exempt items, which include bonds and every teleport
+  tablet.
+- **The bid and the ask are two different trades at two different moments.** On a
+  volatile item the price just drifts between them, and drift in the convenient
+  direction invents a margin that was never there. Checked against what actually
+  traded in the last hour, which is what catches it. This one rejects around 580
+  items that otherwise look tradeable, and the first version of this tab wanted to
+  put 1.1b into a bond margin that did not exist.
+- **Your profit rate is capped by the buy limit.** You cannot buy more than the
+  limit per four hours no matter how good the margin is, so profit times limit is
+  not a rate until you divide it by four hours. Tools that skip that step rank a
+  slow item above a fast one you could run twice.
+- **Buying more of something does not make you more per hour.** Twice the quantity
+  is twice the profit and twice the wait. All the extra does is tie up gp another
+  slot could have used, so positions are sized to when you will next look at the
+  Grand Exchange, not to the size of your bank.
+
+A margin on something that trades twice a day is also fiction, so liquidity, price
+age, spread sanity and one-sidedness are all gates rather than decoration. Each one
+is adjustable and each one tells you by name what it removed.
+
+Full write-up in [docs/market.md](docs/market.md).
 
 ## Licence and attribution
 
