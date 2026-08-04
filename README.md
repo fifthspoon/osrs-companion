@@ -67,10 +67,10 @@ because no single size suits every screen.
 
 The placements are found by scanning your own downloaded tiles for the icons,
 which is why they are current. The only placement list the wiki publishes is from
-2019 and has nothing in Varlamore at all. Scanning finds 2727 icons where that
-list has 1792, and it was checked against the list in the areas the list still
-covers properly: 96% of them found, and everything it found beyond them was a real
-icon rather than a false alarm.
+2019 and has nothing in Varlamore at all. Scanning finds 3114 icons where that
+list has 1792, including whole icon types no catalogue contains at all, lifted
+straight off the map. Checked against the list where it is still valid: 96% found,
+and what it found beyond that was real rather than invented.
 
 ## Design rules
 

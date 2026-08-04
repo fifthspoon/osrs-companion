@@ -9,6 +9,7 @@ import { writeFile, mkdir, readdir } from "node:fs/promises";
 import { readFileSync, existsSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { createHash } from "node:crypto";
 import { PNG } from "pngjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -23,7 +24,8 @@ const TILE_PX = 256;
 const SPAN = 32;
 const PPS = TILE_PX / SPAN;
 const PAD = 8;
-const ANCHORS = Number(process.env.ANCHORS ?? 25);
+const SPRITE = 15;
+const FRAME_MATCH = Number(process.env.FRAME_MATCH ?? 0.80);
 const THRESHOLD = Number(process.env.THRESHOLD ?? 0.75);
 const CALIBRATE = process.env.CALIBRATE === "1";
 const TOL = Number(process.env.TOL ?? 16);
@@ -86,44 +88,37 @@ for (const d of catalogue) {
     pulled++;
   }
   const im = PNG.sync.read(readFileSync(dest));
-  const opaque = [];
-  for (let y = 0; y < im.height; y++) {
-    for (let x = 0; x < im.width; x++) {
-      const i = (im.width * y + x) << 2;
-      if (im.data[i + 3] > 200) opaque.push([x, y, im.data[i], im.data[i + 1], im.data[i + 2]]);
-    }
-  }
-  if (!opaque.length) continue;
-  sprites.push({ key, w: im.width, h: im.height, opaque });
+  // Anything not 15x15 is a different asset family, not a tile icon.
+  if (im.width !== SPRITE || im.height !== SPRITE) continue;
+  sprites.push({ key, data: im.data });
   types[key] = { file: d.file, name: d.name, category: d.category };
 }
 console.log(`${sprites.length} sprites (${pulled} newly downloaded)`);
 
-// Anchor on the rarest colours. Every sprite shares the near-black outline, so
-// indexing on that would put all 108 candidates behind one key and make the
-// scan exhaustive again.
-const freq = new Map();
-for (const s of sprites) for (const [, , r, g, b] of s.opaque) {
-  const k = (r << 16) | (g << 8) | b;
-  freq.set(k, (freq.get(k) ?? 0) + 1);
-}
-const index = new Map();
-for (const s of sprites) {
-  const ranked = [...s.opaque].sort(
-    (a, b) => freq.get((a[2] << 16) | (a[3] << 8) | a[4]) - freq.get((b[2] << 16) | (b[3] << 8) | b[4]),
-  );
-  const seen = new Set();
-  let taken = 0;
-  for (const [x, y, r, g, b] of ranked) {
-    const k = (r << 16) | (g << 8) | b;
-    if (seen.has(k)) continue;
-    seen.add(k);
-    if (!index.has(k)) index.set(k, []);
-    index.get(k).push({ s, dx: x, dy: y });
-    if (++taken >= ANCHORS) break;
+// Every map icon sits in the same circular frame, and those frame pixels are
+// byte identical across all 119 sprites. Matching the frame rather than the
+// glyph is what makes unlisted icon types findable at all: Sailing content has
+// icons that exist on the map and in no published catalogue, and glyph matching
+// can only ever find things it already has a picture of.
+const disc = [];
+const frame = [];
+for (let y = 0; y < SPRITE; y++) {
+  for (let x = 0; x < SPRITE; x++) {
+    const i = (SPRITE * y + x) << 2;
+    let opaque = 0;
+    let same = 0;
+    const f = sprites[0].data;
+    for (const s of sprites) {
+      if (s.data[i + 3] > 200) opaque++;
+      if (s.data[i + 3] > 200 && s.data[i] === f[i] && s.data[i + 1] === f[i + 1] && s.data[i + 2] === f[i + 2]) same++;
+    }
+    if (opaque / sprites.length >= 0.92) disc.push([x, y]);
+    if (same === sprites.length) frame.push([x, y, f[i], f[i + 1], f[i + 2]]);
   }
 }
-console.log(`index: ${index.size} colours, ${[...index.values()].reduce((n, v) => n + v.length, 0)} entries`);
+if (!frame.length) throw new Error("no shared frame found across sprites");
+const FRAME_RGB = [frame[0][2], frame[0][3], frame[0][4]];
+console.log(`frame: ${frame.length} shared pixels, colour ${FRAME_RGB.join(",")}; disc: ${disc.length} pixels`);
 
 const tileFiles = (await readdir(TILES)).filter((f) => f.endsWith(".png"));
 const have = new Set(tileFiles.map((f) => f.slice(0, -4)));
@@ -168,6 +163,44 @@ function padded(tx, ty) {
   }
 }
 
+const unlisted = new Map();
+
+function classify(ox, oy) {
+  let best = { key: null, frac: 0 };
+  for (const s of sprites) {
+    let m = 0, n = 0;
+    for (let y = 0; y < SPRITE; y++) {
+      for (let x = 0; x < SPRITE; x++) {
+        const i = (SPRITE * y + x) << 2;
+        if (s.data[i + 3] <= 200) continue;
+        n++;
+        const j = ((oy + y) * SIDE + ox + x) * 3;
+        if (Math.abs(buf[j] - s.data[i]) <= TOL && Math.abs(buf[j + 1] - s.data[i + 1]) <= TOL && Math.abs(buf[j + 2] - s.data[i + 2]) <= TOL) m++;
+      }
+    }
+    if (m / n > best.frac) best = { key: s.key, frac: m / n };
+  }
+  if (best.frac >= THRESHOLD) return best;
+
+  // Unlisted type: lift the glyph straight off the map, masked to the disc so
+  // no surrounding terrain comes with it, and treat it as a sprite from now on.
+  const px = Buffer.alloc(SPRITE * SPRITE * 4);
+  let sig = "";
+  for (const [x, y] of disc) {
+    const j = ((oy + y) * SIDE + ox + x) * 3;
+    const i = (SPRITE * y + x) << 2;
+    px[i] = buf[j];
+    px[i + 1] = buf[j + 1];
+    px[i + 2] = buf[j + 2];
+    px[i + 3] = 255;
+    sig += `${buf[j]},${buf[j + 1]},${buf[j + 2]};`;
+  }
+  // Registered only once the hit survives dedup, or every near duplicate offset
+  // would mint its own type.
+  const hash = createHash("sha1").update(sig).digest("hex").slice(0, 10);
+  return { key: `unlisted_${hash}`, frac: best.frac, hash, px };
+}
+
 function scanTile(tx, ty) {
   padded(tx, ty);
   const hits = [];
@@ -175,27 +208,24 @@ function scanTile(tx, ty) {
   for (let y = 0; y < SIDE; y++) {
     for (let x = 0; x < SIDE; x++) {
       const p = (y * SIDE + x) * 3;
-      const cands = index.get((buf[p] << 16) | (buf[p + 1] << 8) | buf[p + 2]);
-      if (!cands) continue;
-      for (const { s, dx, dy } of cands) {
-        const ox = x - dx, oy = y - dy;
-        if (ox < 0 || oy < 0 || ox + s.w > SIDE || oy + s.h > SIDE) continue;
-        const id = ((oy * SIDE + ox) << 8) | sprites.indexOf(s);
+      if (buf[p] !== FRAME_RGB[0] || buf[p + 1] !== FRAME_RGB[1] || buf[p + 2] !== FRAME_RGB[2]) continue;
+      for (const [fx, fy] of frame) {
+        const ox = x - fx, oy = y - fy;
+        if (ox < 0 || oy < 0 || ox + SPRITE > SIDE || oy + SPRITE > SIDE) continue;
+        const id = oy * SIDE + ox;
         if (tried.has(id)) continue;
         tried.add(id);
-        let hit = 0;
-        for (const [sx, sy, r, g, b] of s.opaque) {
-          const j = ((oy + sy) * SIDE + ox + sx) * 3;
-          if (Math.abs(buf[j] - r) <= TOL && Math.abs(buf[j + 1] - g) <= TOL && Math.abs(buf[j + 2] - b) <= TOL) hit++;
+        let h = 0;
+        for (const [gx, gy, r, g, b] of frame) {
+          const j = ((oy + gy) * SIDE + ox + gx) * 3;
+          if (Math.abs(buf[j] - r) <= TOL && Math.abs(buf[j + 1] - g) <= TOL && Math.abs(buf[j + 2] - b) <= TOL) h++;
         }
-        const frac = hit / s.opaque.length;
-        if (frac < THRESHOLD) continue;
-        // Centre in this tile's own pixel space, so seam matches are only
-        // claimed by the tile that actually contains them.
-        const cx = ox + s.w / 2 - PAD;
-        const cy = oy + s.h / 2 - PAD;
+        if (h / frame.length < FRAME_MATCH) continue;
+        const cx = ox + SPRITE / 2 - PAD;
+        const cy = oy + SPRITE / 2 - PAD;
         if (cx < 0 || cx >= TILE_PX || cy < 0 || cy >= TILE_PX) continue;
-        hits.push({ key: s.key, frac, cx, cy });
+        const c = classify(ox, oy);
+        hits.push({ key: c.key, frac: c.frac, cx, cy, hash: c.hash, px: c.px });
       }
     }
   }
@@ -203,6 +233,7 @@ function scanTile(tx, ty) {
   const keep = [];
   for (const h of hits) {
     if (keep.some((k) => Math.abs(k.cx - h.cx) < 6 && Math.abs(k.cy - h.cy) < 6)) continue;
+    if (h.hash && !unlisted.has(h.hash)) unlisted.set(h.hash, h.px);
     keep.push(h);
   }
   return keep.map((h) => [
@@ -255,6 +286,17 @@ if (CALIBRATE) {
   console.log(`  of those, under 80% pixel match: ${weak}`);
   process.exit(0);
 }
+
+// Unlisted types get their artwork written out from what was lifted off the map,
+// so they render like any other icon rather than as a placeholder.
+for (const [hash, px] of unlisted) {
+  const png = new PNG({ width: SPRITE, height: SPRITE });
+  px.copy(png.data);
+  await writeFile(join(OUT_DIR, `unlisted-${hash}.png`), PNG.sync.write(png));
+  types[`unlisted_${hash}`] = { file: `unlisted-${hash}.png`, name: "Unlisted map icon", category: "unlisted" };
+}
+const unlistedPlacements = icons.filter(([k]) => k.startsWith("unlisted_")).length;
+console.log(`${unlisted.size} icon types found that no catalogue lists, at ${unlistedPlacements} places`);
 
 await writeFile(
   join(ROOT, "public", "mapicons.json"),

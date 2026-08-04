@@ -267,25 +267,60 @@ Scanning works because the sprites are composited into the tiles **pixel exact**
 The first test done was a straight template match of the bank sprite against the
 z3 tile covering Varrock west bank: 177 of 177 opaque pixels, a 100% match.
 
-The scan finds 2727 icons where the published list has 1792, Varlamore included,
+The scan finds 3114 icons where the published list has 1792, Varlamore included,
 in about 90 seconds over 6392 tiles.
 
-### The three numbers that make it work
+### It matches the frame, not the glyph
+
+This is the part that matters, and it took a wrong turn to find.
+
+Glyph matching can only ever find icons it already has a picture of, and the
+sprite catalogue is from 2019 too. Sailing content has icons that exist on the map
+and in no published catalogue at all, so they were invisible: detected as nothing,
+drawn as nothing, and left sitting on the map at baked size while everything
+around them scaled. That is what an unscaled anchor on Brittle Isle turned out to
+be.
+
+Two probes for a newer sprite catalogue both dead ended. Ids 1752-1764, 1802,
+1908-1915, 1980-1994 and 2074-2084 do exist beyond `MainIcons.json`, but every one
+is 40x40 with five or six colours, which makes them the separate map icon orbs
+family that is never composited into a tile. **There is no published 15x15 sprite
+for the newer icons.**
+
+What saves it: **every map icon sits in the same circular frame, and 38 of those
+frame pixels are byte identical across all 119 known sprites.** So the scan finds
+icons by frame and only then asks what is inside:
+
+1. Match the 38 pixel frame. Its colour is `0,0,1`, which occurs about 47 times
+   per tile, so it indexes cheaply and precisely.
+2. Classify the interior against known sprites.
+3. If nothing scores over `THRESHOLD`, it is an unlisted type: **lift the glyph
+   straight off the map**, masked to the shared disc so no terrain comes with it,
+   write it out as a sprite and treat it as a known type from then on.
+
+That last step is why unlisted icons render properly rather than as placeholders.
+It currently recovers 160 types across 387 placements that no catalogue contains.
+Those types are keyed by content hash and can fragment slightly, since a glyph
+sampled over different terrain may hash differently. Harmless: each fragment
+carries its own correct artwork.
+
+### The four numbers that make it work
 
 Calibrated against the published 2019 list, scoring only the pre-2019 core
 (Varrock, Falador, Lumbridge, Barbarian Village) where that list is trustworthy.
 `CALIBRATE=1 node scripts/fetch-icons.mjs` reruns this.
 
-- **`ANCHORS = 25`.** This is the one that matters, and it is not obvious. The
-  scan indexes sprites by their rarest colours and only verifies a candidate when
-  an anchor pixel matches exactly, so an occluded anchor means the icon is never
-  even tested. At 5 anchors recall was 62%. At 12 it was 94%. At 25 it is **96%**,
-  and 60 changes nothing because the index saturates. If recall ever looks bad,
-  look here first rather than at the threshold.
-- **`THRESHOLD = 0.75`.** The knee. Going down to 0.62 buys almost no recall and
-  triples the unmatched rate. Going up to 0.85 costs a lot of recall for nothing.
+- **`FRAME_MATCH = 0.80`.** How much of the 38 pixel frame must match. This is the
+  recall lever now. At 0.95 and 0.85 recall sits at 95.1%; at 0.80 it is **96.1%**.
+  Partially occluded frames are why.
+- **`THRESHOLD = 0.75`.** Classification only, not detection. Below it an icon is
+  treated as an unlisted type and extracted rather than discarded, so getting this
+  slightly wrong costs a name, not a placement.
 - **`TOL = 16`.** Per channel. 6 is too tight for sprites blended over terrain,
   and past 32 it starts inventing.
+- **`PAD = 8`.** Neighbouring tiles are composited into a padded canvas so an icon
+  straddling a tile seam is still matched whole. The bug that motivated this was
+  real: chasing one icon led to the wrong tile entirely because it sat on a seam.
 
 At those values: **96.1% recall**, and the 9.8% of detections the 2019 list does
 not know about all score 80% or better on pixel match, so they are seven years of
