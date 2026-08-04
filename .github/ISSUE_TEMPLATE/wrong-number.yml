@@ -1,0 +1,58 @@
+name: A number looks wrong
+description: A price, margin, tax figure, timer or map position does not match the game or the wiki
+labels: ["correctness"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This is the most valuable issue you can file here.
+
+        The whole point of this project is being right when other tools are wrong,
+        and the way it goes wrong is silent: it hardcodes facts that live on
+        someone else's server, so when one of those changes the app keeps building
+        and quietly starts lying. Nothing turns red. A report like this is often
+        the only way anyone finds out.
+
+  - type: input
+    attributes:
+      label: What number
+      description: Where you saw it and what it said.
+      placeholder: Market tab, profit after tax on Twisted bow, showed 1.2m
+    validations:
+      required: true
+
+  - type: input
+    attributes:
+      label: What you expected instead
+      placeholder: About 1.1m, since the tax should cap at 5m
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: What are you comparing against
+      description: >
+        A wiki page, the in-game GE, another tool, your own arithmetic. If it is a
+        wiki page, a link is ideal. Being wrong about which one of you is correct is
+        completely fine and still worth filing.
+    validations:
+      required: true
+
+  - type: dropdown
+    attributes:
+      label: Which part
+      options:
+        - Market / Grand Exchange
+        - Dailies or cooldown timers
+        - Map position of a pin or label
+        - Fire cape / Fight Caves sim
+        - Not sure
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: Anything else
+      description: Screenshots welcome. A screenshot of the game beside the app is ideal.
+    validations:
+      required: false

@@ -3,6 +3,49 @@
 Everything here was learned the expensive way. Read the section covering whatever
 you are about to touch, because several of these look like bugs and are not.
 
+## How this project is run
+
+Feedback and proposals are open. **Merge decisions are not.** This is a single
+maintainer project and it stays that way: fork it, open a pull request, and it
+gets reviewed and merged or declined by the maintainer. That is not a comment on
+anyone's code, it is just how the project is governed, and saying so up front
+seems fairer than letting people find out at review time.
+
+Where to put things:
+
+- **Issues** for a specific defect. A number that looks wrong, a crash, a broken
+  step. There is a dedicated template for wrong numbers and it is the single most
+  useful thing you can file here, for the reason in the next paragraph.
+- **Discussions** for anything open ended. Questions, ideas you have not thought
+  all the way through, how it went for you, whether an approach is the right one.
+- **Pull requests** for a change you have already written.
+
+**Correctness is the point of this project**, not feature count. Plenty of paid
+OSRS tools are a thin wrapper over a free public API plus arithmetic, and a fair
+number of them are quietly wrong. So a PR that fixes a number, or an issue proving
+one is wrong, is worth more here than a new tab. That is also why the app is most
+dangerous when it is working: it hardcodes facts that live on someone else's
+server, and when one of those changes the build stays green and the numbers
+silently go wrong.
+
+A pull request will be looked at more quickly if it does these things:
+
+- **Says what you actually verified**, and what you did not. "I typechecked it but
+  never opened it in a browser" is a genuinely useful sentence and costs you
+  nothing. A confident claim that turns out to be arithmetic only is the one thing
+  that will slow a review down.
+- **Keeps to one thing.** A fix plus a refactor plus a rename is three reviews
+  wearing a trenchcoat.
+- **Moves the docs with the code** when it changes a feature, a setup step or an
+  invariant.
+
+CI runs on every pull request: typecheck, build, a third party content gate over
+both the tree and the full history, and an em dash check. It has to be green.
+Everything it checks is described in this file.
+
+Contributions are accepted under AGPL-3.0, the same licence as the rest of the
+project. There is no CLA and you keep your copyright.
+
 ## The one hard rule
 
 **No third party content may enter this repository.** Not map tiles, not wiki

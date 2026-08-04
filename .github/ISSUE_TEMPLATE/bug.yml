@@ -1,0 +1,51 @@
+name: Something is broken
+description: A crash, a blank screen, something that does not respond
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Before filing: **a blank map tab on a fresh clone is expected**, not a bug.
+        The tiles are not committed to this repository on purpose. Run
+        `node scripts/fetch-tiles.mjs` and `node scripts/fetch-labels.mjs` first.
+        The README explains why.
+
+  - type: textarea
+    attributes:
+      label: What happened
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: What you did to cause it
+      description: The steps, in order. "I do not know, it just did it" is an acceptable answer.
+      placeholder: |
+        1. Opened the Market tab
+        2. Set capital to 50m
+        3. Clicked the volume filter
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: Console errors
+      description: F12, Console tab, paste anything red. Skip if there is nothing.
+      render: text
+    validations:
+      required: false
+
+  - type: input
+    attributes:
+      label: Browser and OS
+      placeholder: Firefox 141 on Windows 11
+    validations:
+      required: true
+
+  - type: input
+    attributes:
+      label: Node version
+      description: Output of `node --version`. Only matters if the fetch scripts or the build failed.
+      placeholder: v20.11.0
+    validations:
+      required: false

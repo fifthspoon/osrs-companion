@@ -1,0 +1,63 @@
+name: checks
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      # The licence gates run before anything else, because this is the failure
+      # that cannot be undone by a follow-up commit. See ATTRIBUTION.md.
+      - name: No third party content in the tree
+        run: |
+          if git ls-files | grep -E 'public/tiles/|labels\.json|\.(png|jpg|jpeg|gif|webp|ico)$'; then
+            echo "FAIL: third party content or binary assets are tracked."
+            echo "Map tiles and wiki data are fetched at setup, never committed. See ATTRIBUTION.md."
+            exit 1
+          fi
+          echo "tree clean"
+
+      # A file added in one commit and deleted in the next is still in history,
+      # and a clone gets history. Checking only the tree misses that entirely,
+      # which is exactly how labels.json survived undetected until 2026-08-04.
+      - name: No third party content anywhere in history
+        run: |
+          if git log --all --diff-filter=A --name-only --pretty=format: | sort -u | grep -E 'public/tiles/|labels\.json'; then
+            echo "FAIL: third party content exists in git history, not just in the tree."
+            echo "This needs a history rewrite, not a delete commit."
+            exit 1
+          fi
+          echo "history clean"
+
+      # The positive control is not decoration. An absence assertion that has
+      # never been seen fail against known-bad input proves nothing.
+      - name: No em dashes
+        run: |
+          DASH=$(printf '\xe2\x80\x94')
+          echo "a ${DASH} b" | grep -q "$DASH" || { echo "detector broken, refusing to report clean"; exit 1; }
+          if grep -rn "$DASH" --include="*.md" --include="*.ts" --include="*.mjs" --include="*.css" --include="*.html" . \
+            | grep -v node_modules | grep -v '^\./dist' | grep -v LICENSE; then
+            echo "FAIL: em dashes found. Use periods, commas, colons, or restructure the sentence."
+            exit 1
+          fi
+          echo "clean"
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Build
+        run: npm run build

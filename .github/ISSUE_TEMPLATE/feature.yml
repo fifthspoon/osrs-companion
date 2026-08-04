@@ -1,0 +1,39 @@
+name: Suggest something
+description: An idea for a feature, a route, a tab, a change to how something works
+labels: ["idea"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Worth knowing before you write: this is built as an executive-function aid,
+        not a dashboard. Its job is to **remove decisions**, not to present
+        information. The design rules it follows are in the README, and the two that
+        kill most suggestions are "you never plan in it" and "notifications are rare
+        on purpose".
+
+        That is not a reason to skip filing. It is just the bar the idea gets held
+        to, so you may as well argue for it directly.
+
+  - type: textarea
+    attributes:
+      label: What is the decision this removes
+      description: >
+        The most useful framing here is not the feature, it is the moment in your
+        session where you stop and think "hang on, what now". Describe that and the
+        feature usually designs itself.
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: What you do today instead
+      description: A wiki tab, a spreadsheet, a paid tool, guessing, nothing at all.
+    validations:
+      required: false
+
+  - type: textarea
+    attributes:
+      label: How you imagine it working
+      description: Optional. Rough is fine, and "no idea, that is your job" is fine too.
+    validations:
+      required: false

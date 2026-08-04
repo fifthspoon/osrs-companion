@@ -7,6 +7,21 @@ It never reads the game client. It has no idea what you're doing in game and
 doesn't try to. You press Done, it starts a timer. That's the whole contract,
 and it's why there's nothing here that could trip a ToS line.
 
+> ## This is free, and always will be.
+>
+> **If anyone charged you for this, you were scammed.** There is no paid tier, no
+> premium version, no "pro" unlock, no subscription, and there never will be. The
+> only official source is this repository. Nobody is authorised to sell you access
+> to it, and any site or person charging for it is not connected to this project.
+>
+> That is not a marketing line, it is the entire reason this exists. A lot of OSRS
+> tools charge a subscription for a thin wrapper over a free public API plus
+> arithmetic, and a fair number of them are quietly wrong on top of it. This is
+> the free thing that makes those pointless.
+>
+> It is AGPL-3.0, so you can also read every line, fork it, and check that this
+> paragraph is true rather than taking my word for it.
+
 ## Run
 
 Needs Node 18 or newer.
@@ -153,8 +168,15 @@ Code here is original and licensed **AGPL-3.0** (see [LICENSE](LICENSE)).
 
 AGPL rather than MIT on purpose. If you fork this, add to it, and host it
 somewhere, you have to publish your source to the people using it. Take it,
-improve it, run it, sell support for it if you like. You just cannot close it
-and charge people for access to something they can't see.
+improve it, run it. You just cannot close it and charge people for access to
+something they can't see.
+
+To be exact about the free promise above, since the licence and the promise are
+two different things: **this project will never charge you anything.** The licence
+does technically let a third party redistribute their own fork commercially, on
+the condition that they publish their source too. If that ever happens it is not
+this project, it is not endorsed, and you did not need to pay them, because the
+original is right here for free.
 
 The wiki data the app uses is fetched at setup and is not redistributed here.
 The full picture is in [ATTRIBUTION.md](ATTRIBUTION.md), including why the fetch

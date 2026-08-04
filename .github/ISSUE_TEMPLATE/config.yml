@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Question, or just feedback
+    url: https://github.com/fifthspoon/osrs-companion/discussions
+    about: Anything open ended. Does this do X, is this the right approach, here is how it went for me. Discussions rather than issues.
+  - name: Licence and third party content
+    url: https://github.com/fifthspoon/osrs-companion/blob/master/ATTRIBUTION.md
+    about: Why the map tiles and wiki data are not in this repository, and what that means if you fork or package it.

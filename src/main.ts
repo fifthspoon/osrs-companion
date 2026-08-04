@@ -77,6 +77,34 @@ function tabBar(): HTMLElement {
   return bar;
 }
 
+// Someone who got charged for this has a copy of the app, not a copy of the
+// readme, so the notice has to live in the UI to reach the person it is for.
+function footer(): HTMLElement {
+  const f = document.createElement("footer");
+  f.className = "sitefoot";
+
+  const line = document.createElement("p");
+  line.className = "sitefoot-loud";
+  line.textContent =
+    "This is free, and always will be. If anyone charged you for it, you were scammed.";
+  f.appendChild(line);
+
+  const sub = document.createElement("p");
+  sub.appendChild(
+    document.createTextNode("Free and open source under AGPL-3.0. Get it, and the source, at "),
+  );
+  const a = document.createElement("a");
+  a.href = "https://github.com/fifthspoon/osrs-companion";
+  a.textContent = "github.com/fifthspoon/osrs-companion";
+  a.target = "_blank";
+  a.rel = "noopener noreferrer";
+  sub.appendChild(a);
+  sub.appendChild(document.createTextNode(". Not affiliated with Jagex."));
+  f.appendChild(sub);
+
+  return f;
+}
+
 function draw() {
   // The fight tab runs an animation loop and a window key listener, so it has
   // to be shut down before its DOM is thrown away. Safe no-op otherwise.
@@ -88,6 +116,7 @@ function draw() {
   const body = document.createElement("div");
   body.className = "body";
   root.appendChild(body);
+  root.appendChild(footer());
 
   if (tab === "dailies") {
     renderDailies(body, store, Date.now(), handlers);

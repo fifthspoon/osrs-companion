@@ -711,3 +711,32 @@ select.minisel {
   .gefiltergrid { grid-template-columns: 1fr; gap: 4px 0; }
   .gefiltergrid .gehint { margin-bottom: 10px; }
 }
+
+/* The paid-tools notice. Deliberately quiet: design rule 1 says ready tasks are
+   the only loud thing on screen. The first line is a shade brighter than the
+   second because it is the part someone who got scammed needs to read. */
+.sitefoot {
+  margin-top: 34px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+  text-align: center;
+  font-size: 12px;
+  color: var(--dim);
+  line-height: 1.55;
+}
+
+.sitefoot p { margin: 0 0 4px; }
+.sitefoot p:last-child { margin-bottom: 0; }
+
+.sitefoot-loud {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.sitefoot a {
+  color: var(--dim);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.sitefoot a:hover { color: var(--text); }
