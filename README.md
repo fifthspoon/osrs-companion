@@ -45,6 +45,34 @@ The tile fetch is resumable, so a killed run picks up where it stopped.
 Leave it open on your second monitor. State lives in `localStorage`, so it
 survives refreshes and reboots.
 
+## Your character
+
+First thing in the nav bar is **Sync character**. It opens a small panel. Type
+your RuneScape name, press Sync, and it loads your account from
+[WiseOldMan](https://wiseoldman.net): combat level, total level, total experience
+and all 24 skills. Once set, the button becomes your name.
+
+**You can keep as many characters as you like and switch between them.** Every
+one you add is listed in the panel with its combat level. Click one to make it
+the active character, or the x to drop it. Main, ironman, pure, whatever.
+
+**You can also enter a character by hand**, via "Enter levels manually". That is
+for accounts that are not on the hiscores, or for planning a build that does not
+exist yet. Type the levels and it works out the combat level and total level as
+you go, using the real formula. A synced character can be switched to manual
+editing too, if you want to try "what if I got 90 Herblore".
+
+All of it lives in your browser only, under `osrs-companion:players:v1`. Nothing
+is sent anywhere except the name you typed, to WiseOldMan, to look it up. See
+[ATTRIBUTION.md](ATTRIBUTION.md).
+
+Pressing Sync asks WiseOldMan to refresh from the official hiscores first, so it
+is current rather than whatever snapshot they happened to have. If they are busy
+or rate limiting, it falls back to their last known snapshot rather than failing.
+
+A name that is not on the hiscores is rejected outright. It will not quietly hand
+you a level 3 placeholder, which is what the obvious implementation does.
+
 ## Herb run
 
 A second tab with the world map on it, at 8 pixels per game square. Every stop

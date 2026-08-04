@@ -8,6 +8,7 @@ import { render as renderMap } from "./mapview";
 import { ROUTES } from "./routes";
 import * as fightview from "./fightview";
 import * as market from "./market/view";
+import * as playerfield from "./playerfield";
 import { requestPermission, fire, clear } from "./notify";
 
 const root = document.getElementById("app") as HTMLElement;
@@ -55,9 +56,12 @@ function setTab(next: Tab) {
   draw();
 }
 
-function tabBar(): HTMLElement {
+function tabBar(): [HTMLElement, Map<Tab, HTMLButtonElement>] {
   const bar = document.createElement("nav");
   bar.className = "tabs";
+  bar.appendChild(playerfield.render(draw));
+
+  const buttons = new Map<Tab, HTMLButtonElement>();
   const items: [Tab, string][] = [
     ["dailies", "Dailies"],
     ...ROUTES.map((r) => [r.id, r.name] as [Tab, string]),
@@ -68,11 +72,19 @@ function tabBar(): HTMLElement {
   for (const [id, label] of items) {
     const b = document.createElement("button");
     b.textContent = label;
-    if (tab === id) b.classList.add("active");
     b.addEventListener("click", () => setTab(id));
     bar.appendChild(b);
+    buttons.set(id, b);
   }
-  return bar;
+  return [bar, buttons];
+}
+
+const [nav, tabButtons] = tabBar();
+const body = document.createElement("div");
+body.className = "body";
+
+function syncTabs() {
+  for (const [id, b] of tabButtons) b.classList.toggle("active", id === tab);
 }
 
 function footer(): HTMLElement {
@@ -105,12 +117,8 @@ function draw() {
   fightview.stop();
   market.stop();
 
-  root.innerHTML = "";
-  root.appendChild(tabBar());
-  const body = document.createElement("div");
-  body.className = "body";
-  root.appendChild(body);
-  root.appendChild(footer());
+  syncTabs();
+  body.innerHTML = "";
 
   if (tab === "dailies") {
     renderDailies(body, store, Date.now(), handlers);
@@ -137,6 +145,10 @@ function tick() {
   }
   if (tab === "dailies") draw();
 }
+
+root.appendChild(nav);
+root.appendChild(body);
+root.appendChild(footer());
 
 draw();
 setInterval(tick, 1000);

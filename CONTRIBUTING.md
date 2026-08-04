@@ -538,6 +538,8 @@ whenever a number looks off:
 | File | Role |
 | --- | --- |
 | `src/main.ts` | Tabs, the 1 second tick, ready-transition detection |
+| `src/player.ts` | The synced character: WiseOldMan client, persistence. Pure apart from `fetch` |
+| `src/playerfield.ts` | The nav bar character control and its dropdown |
 | `src/tasks.ts` | Task definitions. Edit here to change timers or add tasks |
 | `src/store.ts` | Persistence plus readiness maths (daily boundary, cooldowns) |
 | `src/notify.ts` | Desktop notifications, fire-once-per-cycle logic |
@@ -570,7 +572,7 @@ localStorage keys: `osrs-companion:v1` (tasks), `:run:v1`, `:markers:v1`,
 three size sliders), `:maptips:v1` (hover tooltips), `:mapsearchpin:v1` (search
 pinned out of the rail), `:mapiconfilter:v1` (hidden icon type keys),
 `:market:v1` (market settings), `:market:cache:*` (endpoint caches, safe to
-delete), `:tab`.
+delete), `:players:v1` (the character roster), `:tab`.
 
 Every map preference is global rather than per map instance, deliberately. Turning
 labels off should turn them off everywhere. Only pan, zoom, the open pane and the
@@ -582,8 +584,55 @@ to carry a pre-existing bank and freshness setting into `:market:v1`, then ignor
 
 The `:tab` value `"flips"` is migrated to `"market"` on load.
 
+## The synced character
+
+**The official Jagex hiscores cannot be called from a browser.** It answers `curl`
+with a 200 but sends **no `Access-Control-Allow-Origin` header at all**, so a page
+fetch dies with `TypeError: Failed to fetch`. There is no header to relax and no
+key to obtain. Using it would mean running a server, which this project
+deliberately does not do.
+
+**WiseOldMan works from the browser**, which is why `src/player.ts` uses it.
+`api.wiseoldman.net/v2/players/{name}` answers 200 with CORS open. Do not
+conclude from a `curl` 403 that it is unusable: `curl` gets a Cloudflare bot
+challenge and real Chrome does not. Check from the page, not from the terminal.
+
+`latestSnapshot.data.skills` is a map of 25 skills, each with `level`,
+`experience` and `rank`, and `overall` is one of them. `combatLevel`, `exp`,
+`type` and `updatedAt` are top level.
+
+### Why sync reads before it writes
+
+`POST /players/{name}` refreshes from the hiscores. For a name that does not
+exist it returns **400 `HISCORES_USERNAME_NOT_FOUND` and creates a permanent stub
+anyway**, with `type: "unknown"` and a level 3 skill set. A `GET` on that name
+then returns **200** forever after.
+
+So the obvious "POST, fall back to GET on failure" hands the user a confident
+level 3 character for any typo, and leaves junk records on a free public service.
+The order is load-bearing:
+
+1. **GET first.** An untyped name 404s cleanly and no stub is created, because
+   the POST never happens.
+2. Only then POST to refresh, keeping the GET result if that fails.
+3. **Reject `type === "unknown"` or a missing `latestSnapshot` regardless**, since
+   stubs from other people's typos already exist and answer 200.
+
 ## Gotchas that will bite you
 
+- **The nav bar and footer are built once and never rebuilt.** `draw()` wipes only
+  `.body`. It used to wipe all of `#app`, which was harmless when the nav held
+  only buttons, but the dailies tab calls `draw()` every second, so any focusable
+  control in the nav lost focus and caret once a second while you typed. Do not
+  tidy `draw()` back into rebuilding the shell. Removing a focused element blurs
+  it, so re-appending the same node does not save you.
+- **`.tabs button` outspecifies a bare class.** It is `(0,1,1)`, so a nav control
+  styled as `.syncbtn` silently inherits the flat tab look. Style nav controls
+  through their container, as `.playerbox .syncbtn`. Caught by screenshotting, not
+  by reading the CSS.
+- **Re-enabling a disabled input blurs it.** A handler bound to that input then
+  stops firing, which is how an Escape-to-close broke after a failed request. Bind
+  dismissal at the document level, or restore focus explicitly.
 - **`tsconfig.json` must keep `"noEmit": true`.** The build is `tsc && vite build`.
   Without it, tsc emits `.js` next to the `.ts` sources and Vite resolves imports
   to the stale copies. The symptom is a baffling "does not provide an export named

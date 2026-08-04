@@ -50,6 +50,11 @@ HANDOVER.md
 /*.tmp.mjs
 /scratch/
 
+# The Playwright verify harness from CONTRIBUTING.md. Its own node_modules and
+# the screenshots it writes, which are renders of third party map artwork and so
+# must never be committed. See ATTRIBUTION.md.
+/shots/
+
 # Editor state. Holds absolute local paths, which are personal.
 .vscode/
 .idea/

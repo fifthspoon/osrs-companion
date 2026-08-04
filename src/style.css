@@ -165,10 +165,229 @@ button.undo:hover { color: var(--text); }
 
 .tabs {
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   gap: 6px;
   border-bottom: 1px solid var(--line);
   padding-bottom: 10px;
 }
+
+.playerbox { position: relative; margin-right: 2px; }
+
+.tabs .playertrigger {
+  background: none;
+  border: 1px solid transparent;
+  color: var(--dim);
+  font-family: inherit;
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.tabs .playertrigger:hover { color: var(--text); }
+
+.tabs .playertrigger.set {
+  color: var(--go-bright);
+  border-color: var(--line);
+  background: var(--panel);
+}
+
+.playerpop {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 60;
+  width: 244px;
+  padding: 12px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.playerpop[hidden] { display: none; }
+
+.playerrow { display: flex; gap: 6px; }
+
+.playerinput {
+  flex: 1;
+  min-width: 0;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 13px;
+  padding: 6px 9px;
+  border-radius: 6px;
+}
+
+.playerinput::placeholder { color: var(--dim); }
+
+.playerinput:focus { outline: none; border-color: var(--go); }
+
+.playerinput:disabled { opacity: 0.6; }
+
+.playerpop .syncbtn {
+  background: transparent;
+  border: 1px solid var(--go);
+  color: var(--go-bright);
+  font-family: inherit;
+  font-size: 12.5px;
+  padding: 6px 11px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.playerpop .syncbtn:hover:not(:disabled) { background: rgba(92, 156, 62, 0.12); }
+
+.playerpop .syncbtn:disabled { opacity: 0.5; cursor: default; }
+
+.playerstatus { font-size: 11.5px; color: var(--dim); }
+
+.playerstatus:empty { display: none; }
+
+.playerstatus.err { color: #c88a4a; }
+
+.playerhead { font-size: 11.5px; color: var(--dim); }
+
+.playergrid {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.playergrid li {
+  display: flex;
+  justify-content: space-between;
+  gap: 4px;
+  background: var(--bg);
+  border-radius: 4px;
+  padding: 3px 6px;
+  font-size: 11px;
+}
+
+.playergrid .sk { color: var(--dim); text-transform: capitalize; }
+
+.playergrid b { color: var(--text); font-weight: 600; }
+
+.playerpop.wide { width: 336px; }
+
+.playermain, .playereditor {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.playermain[hidden], .playereditor[hidden] { display: none; }
+
+.playerroster {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.playerroster[hidden] { display: none; }
+
+.playerroster li {
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+  border-radius: 5px;
+  border: 1px solid transparent;
+}
+
+.playerroster li.on {
+  border-color: var(--go);
+  background: rgba(92, 156, 62, 0.1);
+}
+
+.playerroster .pickbtn {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: none;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 12.5px;
+  text-align: left;
+  padding: 5px 8px;
+  cursor: pointer;
+  border-radius: 5px;
+}
+
+.playerroster .pickbtn:hover { background: rgba(255, 255, 255, 0.04); }
+
+.playerroster .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.playerroster .meta { color: var(--dim); font-size: 11px; flex: none; }
+
+.playerroster .delbtn {
+  flex: none;
+  background: none;
+  border: none;
+  color: var(--dim);
+  font-family: inherit;
+  font-size: 12px;
+  padding: 0 7px;
+  cursor: pointer;
+  border-radius: 5px;
+}
+
+.playerroster .delbtn:hover { color: #c88a4a; background: rgba(255, 255, 255, 0.04); }
+
+.playerskills {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+}
+
+.skfield {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--bg);
+  border-radius: 4px;
+  padding: 2px 4px 2px 6px;
+}
+
+.skfield span {
+  color: var(--dim);
+  font-size: 10.5px;
+  text-transform: capitalize;
+  width: 26px;
+  flex: none;
+}
+
+.skfield input {
+  width: 100%;
+  min-width: 0;
+  background: none;
+  border: none;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 12px;
+  padding: 3px 0;
+  text-align: right;
+}
+
+.skfield input:focus { outline: none; color: var(--go-bright); }
+
+.skfield input::-webkit-outer-spin-button,
+.skfield input::-webkit-inner-spin-button { appearance: none; margin: 0; }
+
+.playereditor .playerrow { align-items: center; gap: 10px; }
 
 .tabs button {
   background: none;

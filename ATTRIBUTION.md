@@ -65,6 +65,39 @@ and `public/tiles/` is never modified. Nothing new is downloaded and nothing ext
 is redistributed. The originals stay on disk so a report of a missing icon can be
 checked against what the wiki actually rendered.
 
+### Live item prices
+
+Requested by `src/market/api.ts` from `prices.runescape.wiki/api/v2/osrs`,
+directly from your browser, at the moment you open the Market tab.
+
+Nothing is written to disk and nothing is committed. The responses are cached in
+your own browser's localStorage for a minute at a time so the tab does not
+re-request on every render. Prices are facts about a live market, and the wiki
+publishes this endpoint openly with `Access-Control-Allow-Origin: *` precisely so
+that third party tools can call it.
+
+### Your character's levels
+
+Requested by `src/player.ts` from `api.wiseoldman.net/v2`, directly from your
+browser, only when you press **Sync character** and only for the name you typed.
+
+[WiseOldMan](https://wiseoldman.net) is a free, open source OSRS tracker that
+reads the official Jagex hiscores and exposes them over a public API. The app
+uses it because the official hiscores endpoint sends no CORS header at all and so
+cannot be called from a browser without a server in the middle, which this
+project deliberately does not have.
+
+Two things about this are worth stating plainly:
+
+- **It is your own public hiscores data.** Levels, experience and rank are
+  already public for every account, and nothing is sent anywhere except the name
+  you typed, to WiseOldMan, to look it up.
+- **It is stored only in your browser**, under the localStorage key
+  `osrs-companion:players:v1`. Nothing about your account enters this repository,
+  and no name is hardcoded anywhere in it.
+
+Characters entered by hand never touch the network at all.
+
 ### Fight Caves simulation
 
 `src/fight/` is an original reimplementation. Every mechanic in it came from
@@ -91,6 +124,7 @@ stays clearly above board.
 | Map tiles you fetch | Jagex artwork via Weird Gloop, local use only, not redistributable |
 | Map icon images you fetch | Same as the tiles: Jagex artwork via Weird Gloop, not redistributable |
 | Wiki-derived data you fetch | CC BY-NC-SA 3.0 |
+| Prices and hiscores you request | Live facts, requested by your browser, never stored in the repository |
 
 Note that **CC BY-NC-SA is not an open source licence**: the NonCommercial
 clause is incompatible with the OSI definition. Keeping wiki-derived data out of
