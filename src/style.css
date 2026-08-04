@@ -594,3 +594,77 @@ select.minisel {
 @media (max-width: 700px) {
   .fightcols { grid-template-columns: 1fr; }
 }
+
+/* --- Grand Exchange flips --- */
+.gewrap { display: flex; flex-direction: column; gap: 14px; }
+
+.gebar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  font-size: 12.5px;
+  color: var(--dim);
+}
+
+.gebar label { display: flex; align-items: center; gap: 7px; }
+
+.gebar input[type="text"] {
+  width: 110px;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 5px 8px;
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+.gebar input[type="checkbox"] { accent-color: var(--go); cursor: pointer; }
+
+/* The single best flip is the only loud thing here, same as a ready daily. */
+.getop { align-items: flex-start; }
+
+.geprofit { text-align: right; flex-shrink: 0; }
+
+.gepnum {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--go-bright);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+.getable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+.getable th {
+  text-align: right;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  color: var(--dim);
+  font-weight: 600;
+  padding: 0 8px 7px;
+  border-bottom: 1px solid var(--line);
+}
+
+.getable th:first-child,
+.getable td:first-child { text-align: left; }
+
+.getable td {
+  text-align: right;
+  padding: 7px 8px;
+  border-bottom: 1px solid var(--line);
+  color: var(--dim);
+}
+
+.getable tr:last-child td { border-bottom: none; }
+.getable tbody tr:hover td { background: rgba(255, 255, 255, 0.02); }
+
+.gename { color: var(--text); font-weight: 600; }
+.geprofitcell { color: #8fbf70; font-weight: 600; }

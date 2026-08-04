@@ -6,6 +6,7 @@ import { render as renderDailies } from "./ui";
 import { render as renderRoute } from "./routeview";
 import { ROUTES } from "./routes";
 import * as fightview from "./fightview";
+import * as geview from "./geview";
 import { requestPermission, fire, clear } from "./notify";
 
 const root = document.getElementById("app") as HTMLElement;
@@ -60,6 +61,7 @@ function tabBar(): HTMLElement {
   const items: [Tab, string][] = [
     ["dailies", "Dailies"],
     ...ROUTES.map((r) => [r.id, r.name] as [Tab, string]),
+    ["flips", "Flips"],
     ["fight", "Fire cape"],
   ];
   for (const [id, label] of items) {
@@ -76,6 +78,7 @@ function draw() {
   // The fight tab runs an animation loop and a window key listener, so it has
   // to be shut down before its DOM is thrown away. Safe no-op otherwise.
   fightview.stop();
+  geview.stop();
 
   root.innerHTML = "";
   root.appendChild(tabBar());
@@ -85,6 +88,8 @@ function draw() {
 
   if (tab === "dailies") {
     renderDailies(body, store, Date.now(), handlers);
+  } else if (tab === "flips") {
+    body.appendChild(geview.render(draw));
   } else if (tab === "fight") {
     body.appendChild(fightview.render());
   } else {

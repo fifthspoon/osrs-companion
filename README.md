@@ -125,6 +125,26 @@ that costs you the cape.
 Click to move, click Jad to attack. `1` mage, `2` range, `3` melee, `0` none.
 `Space` toggles run, `R` restarts, `H` toggles the coaching hints.
 
+## Flips
+
+Live Grand Exchange margins from the wiki's free real-time prices API, with the
+maths done properly.
+
+Two things most flip sites get wrong, and this does not:
+
+- **The tax is 2%, not 1%.** It changed on 29 May 2025. A tool still using the
+  old rate overstates every margin, and overstates it worst on the expensive
+  items you were most likely to act on. Tax here rounds down, caps at 5m at a
+  250m sale price, and knows all 48 exempt items including bonds.
+- **A margin on something that trades twice a day is fiction.** Volume and price
+  age are filters, not decoration. Only items traded in the last 30 minutes with
+  100+ hourly volume are shown, and both numbers are on every row so you can see
+  the judgement rather than trust it.
+
+Set your capital and it ranks by profit per 4 hour buy limit, which is the real
+ceiling on a flip. One recommendation is shown large, the rest sit quietly
+underneath.
+
 ## Licence and attribution
 
 Code here is original and licensed **AGPL-3.0** (see [LICENSE](LICENSE)).
