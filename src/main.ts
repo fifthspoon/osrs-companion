@@ -77,8 +77,6 @@ function tabBar(): HTMLElement {
   return bar;
 }
 
-// Someone who got charged for this has a copy of the app, not a copy of the
-// readme, so the notice has to live in the UI to reach the person it is for.
 function footer(): HTMLElement {
   const f = document.createElement("footer");
   f.className = "sitefoot";

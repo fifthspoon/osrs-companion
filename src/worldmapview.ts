@@ -7,15 +7,6 @@ import {
 } from "./worldmap";
 import type { CustomMarker } from "./worldmap";
 
-// Pan and zoom viewer over the world map.
-//
-// The map is a tile pyramid, not one big image, so only the tiles actually on
-// screen are in the DOM at any moment and each zoom level is served at its own
-// native resolution instead of being stretched. That is what keeps it sharp.
-//
-// Everything on top of it is placed from in-game world coordinates through an
-// exact transform, so nothing is positioned by hand.
-
 export interface ViewCtx {
   visited: (stopId: string) => boolean;
   nextId: string | null;
@@ -41,11 +32,34 @@ let labelsOn = localStorage.getItem(LABELS_KEY) !== "0";
 let labelData: LabelDef[] = [];
 let labelsLoading: Promise<void> | null = null;
 
-// Ranking labels by importance. Article length alone is a bad signal: the
-// longest article in the set is Castle Wars, a minigame, at twice the length of
-// Varrock. Type alone is also unreliable, since 148 locations have no type at
-// all and Brimhaven is filed as "maplink". So score on type first with length
-// only as a tiebreaker within a type.
+const SIZE_KEY = "osrs-companion:mapsize:v1";
+const SIZE_MIN = 0.5;
+const SIZE_MAX = 3;
+const SIZE_DEFAULTS = { pin: 1, label: 1 };
+type SizePrefs = typeof SIZE_DEFAULTS;
+
+function clampMul(v: unknown): number {
+  const n = typeof v === "number" && Number.isFinite(v) ? v : 1;
+  return Math.min(SIZE_MAX, Math.max(SIZE_MIN, n));
+}
+
+function loadSizes(): SizePrefs {
+  try {
+    const raw = localStorage.getItem(SIZE_KEY);
+    if (!raw) return { ...SIZE_DEFAULTS };
+    const p = JSON.parse(raw) as Partial<SizePrefs>;
+    return { pin: clampMul(p.pin), label: clampMul(p.label) };
+  } catch {
+    return { ...SIZE_DEFAULTS };
+  }
+}
+
+let sizePrefs: SizePrefs = loadSizes();
+
+function saveSizes(): void {
+  localStorage.setItem(SIZE_KEY, JSON.stringify(sizePrefs));
+}
+
 const TYPE_WEIGHT: Record<string, number> = {
   region: 100, kingdom: 100, city: 85, settlement: 80, island: 60,
   maplink: 55, guild: 50, minigame: 48, dungeon: 40, boss: 40,
@@ -56,8 +70,6 @@ function scoreOf(l: { type: string; len: number }): number {
   return (TYPE_WEIGHT[l.type] ?? 20) + Math.min(20, l.len / 2000);
 }
 
-// Tier by rank rather than by an absolute score, so each zoom level shows a
-// predictable number of names no matter how the underlying data shifts.
 function assignTiers(list: LabelDef[]): void {
   list.sort((a, b) => scoreOf(b) - scoreOf(a));
   list.forEach((l, i) => {
@@ -65,27 +77,22 @@ function assignTiers(list: LabelDef[]): void {
   });
 }
 
-// Wiki titles carry disambiguators that mean nothing on a map.
 function cleanName(n: string): string {
   return n.replace(/\s*\((location|island|area|region|surface)\)\s*$/i, "");
 }
 
-// How big labels render, as a multiplier on their CSS font size.
-//
-// The obvious counter-scale (1/zoom) pins labels to a constant screen size at
-// every zoom, which sounds correct and reads badly: zoomed right in the terrain
-// is at 16 px per game square and the names are still 10 px, so they look tiny
-// against everything around them.
-//
-// So let them grow with zoom, but clamped hard at both ends. The floor stops
-// them ever becoming unreadable, the ceiling stops them swamping the map. Cube
-// root because linear growth is far too aggressive across a 60x zoom range.
 function labelScale(perSquare: number): number {
-  return Math.min(2.2, Math.max(1, Math.cbrt(Math.max(perSquare, 0.01)) * 0.75));
+  return growth(perSquare, 2.2) * sizePrefs.label;
 }
 
-// Labels are text, so they are only worth drawing once the map is big enough to
-// read them against. Thresholds are in screen pixels per game square.
+function pinScale(perSquare: number): number {
+  return growth(perSquare, 2.6) * sizePrefs.pin;
+}
+
+function growth(perSquare: number, ceiling: number): number {
+  return Math.min(ceiling, Math.max(1, Math.cbrt(Math.max(perSquare, 0.01)) * 0.75));
+}
+
 function tierForZoom(perSquare: number): number {
   if (perSquare < 0.35) return 0;
   if (perSquare < 0.9) return 1;
@@ -103,19 +110,15 @@ function ensureLabels(onReady: () => void): void {
       onReady();
     })
     .catch(() => {
-      // No labels file is survivable: the map still works without names.
       labelData = [];
     });
 }
 
-// Viewport transform: base pixel space -> screen, via scale + offset.
 let zoom = 0.03;
 let offX = 0;
 let offY = 0;
 let inited = false;
 
-// Past this the tiles are being upscaled beyond what the wiki actually renders,
-// so there is no more detail to reveal, only bigger pixels.
 const MAX_ZOOM = 2;
 
 export function render(route: RouteDef, ctx: ViewCtx, rerender: () => void): HTMLElement {
@@ -137,7 +140,6 @@ export function render(route: RouteDef, ctx: ViewCtx, rerender: () => void): HTM
   labelHost.className = "wmlabels";
   layer.appendChild(labelHost);
 
-  // Route line through the stops, in base pixel space.
   const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
   svg.setAttribute("viewBox", `0 0 ${BASE_W} ${BASE_H}`);
   svg.setAttribute("width", String(BASE_W));
@@ -153,7 +155,6 @@ export function render(route: RouteDef, ctx: ViewCtx, rerender: () => void): HTM
   svg.appendChild(poly);
   layer.appendChild(svg);
 
-  // Route pins.
   route.stops.forEach((s, i) => {
     const p = worldToPx(s.world.wx, s.world.wy);
     const done = ctx.visited(s.id);
@@ -170,7 +171,6 @@ export function render(route: RouteDef, ctx: ViewCtx, rerender: () => void): HTM
     layer.appendChild(pin);
   });
 
-  // Custom markers.
   for (const m of markers) {
     const p = worldToPx(m.wx, m.wy);
     const el = document.createElement("button");
@@ -194,11 +194,10 @@ export function render(route: RouteDef, ctx: ViewCtx, rerender: () => void): HTM
   wrap.appendChild(controls(route, rerender, () => {
     inited = false;
     fit();
+  }, () => {
+    apply();
   }));
 
-  // One container per tile zoom level. Keeping the outgoing level around until
-  // the incoming one has finished loading is what stops a zoom step from
-  // flashing through empty background.
   interface Level { el: HTMLDivElement; tiles: Map<string, HTMLImageElement> }
   const levels = new Map<number, Level>();
 
@@ -236,8 +235,6 @@ export function render(route: RouteDef, ctx: ViewCtx, rerender: () => void): HTM
     const size = tileBaseSize(z);
     const span = tileSpan(z);
 
-    // Visible rectangle in base pixel space, padded by one tile so panning
-    // reveals loaded tiles rather than blank space.
     const x0 = -offX / zoom - size;
     const y0 = -offY / zoom - size;
     const x1 = (r.width - offX) / zoom + size;
@@ -247,7 +244,6 @@ export function render(route: RouteDef, ctx: ViewCtx, rerender: () => void): HTM
     const need = new Set<string>();
     for (let tx = rng.tx0; tx <= rng.tx1; tx++) {
       for (let ty = rng.ty0; ty <= rng.ty1; ty++) {
-        // Nothing was pulled outside these bounds, so do not even request it.
         if ((tx + 1) * span <= WORLD_BOUNDS.minX || tx * span >= WORLD_BOUNDS.maxX) continue;
         if ((ty + 1) * span <= WORLD_BOUNDS.minY || ty * span >= WORLD_BOUNDS.maxY) continue;
 
@@ -264,7 +260,6 @@ export function render(route: RouteDef, ctx: ViewCtx, rerender: () => void): HTM
         im.style.top = `${o.y}px`;
         im.style.width = `${size}px`;
         im.style.height = `${size}px`;
-        // Ocean and out-of-world tiles legitimately do not exist.
         im.addEventListener("error", () => {
           im.style.visibility = "hidden";
           purgeStale(pickTileZoom(zoom));
@@ -282,15 +277,10 @@ export function render(route: RouteDef, ctx: ViewCtx, rerender: () => void): HTM
       lv.tiles.delete(k);
     }
 
-    // Only past native resolution is nearest-neighbour the right call. Below
-    // it we want the averaging, or downscaled tiles crawl with aliasing.
     lv.el.style.imageRendering = zoom * PX_PER_SQUARE > (1 << z) ? "pixelated" : "auto";
     purgeStale(z);
   }
 
-  // Live text, not baked pixels, so names stay crisp at every zoom and can be
-  // thinned out as you zoom away instead of turning the map into a wall of
-  // text. Elements are reused by name so dragging does not churn the DOM.
   const liveLabels = new Map<string, HTMLElement>();
 
   function syncLabels() {
@@ -340,14 +330,6 @@ export function render(route: RouteDef, ctx: ViewCtx, rerender: () => void): HTM
 
   ensureLabels(() => apply());
 
-  // Fit the map once the stage actually has a size. ResizeObserver rather than
-  // requestAnimationFrame on purpose: rAF is paused while the page isn't
-  // compositing (background tab, hidden window), which would leave the map
-  // untransformed and looking broken on return.
-  // `applied` is per render, `inited` is module wide. The zoom/offset should
-  // only be reset the very first time, but EVERY freshly built layer still
-  // needs apply() called on it, otherwise marking a stop rebuilds the DOM and
-  // leaves the new layer with no transform at all.
   let applied = false;
   function fit() {
     const r = stage.getBoundingClientRect();
@@ -367,9 +349,6 @@ export function render(route: RouteDef, ctx: ViewCtx, rerender: () => void): HTM
   }
   new ResizeObserver(fit).observe(stage);
   fit();
-  // ResizeObserver delivery is also part of the rendering lifecycle, so it can
-  // be starved in a hidden window. Timers are not, so retry briefly until the
-  // stage reports a real size.
   let tries = 0;
   const poll = () => {
     if (applied || tries++ > 20) return;
@@ -378,21 +357,42 @@ export function render(route: RouteDef, ctx: ViewCtx, rerender: () => void): HTM
   };
   setTimeout(poll, 0);
 
+  function clampView() {
+    const r = stage.getBoundingClientRect();
+    if (r.width <= 0) return;
+
+    const tl = worldToPx(WORLD_BOUNDS.minX, WORLD_BOUNDS.maxY);
+    const br = worldToPx(WORLD_BOUNDS.maxX, WORLD_BOUNDS.minY);
+    const w = (br.x - tl.x) * zoom;
+    const h = (br.y - tl.y) * zoom;
+
+    if (w >= r.width) {
+      offX = Math.min(-tl.x * zoom, Math.max(r.width - br.x * zoom, offX));
+    } else {
+      offX = (r.width - w) / 2 - tl.x * zoom;
+    }
+    if (h >= r.height) {
+      offY = Math.min(-tl.y * zoom, Math.max(r.height - br.y * zoom, offY));
+    } else {
+      offY = (r.height - h) / 2 - tl.y * zoom;
+    }
+  }
+
   function apply() {
+    clampView();
     layer.style.transform = `translate(${offX}px, ${offY}px) scale(${zoom})`;
-    // Counter-scale pins so they stay a readable size at any zoom.
-    const inv = 1 / zoom;
+    const pinInv = pinScale(zoom * PX_PER_SQUARE) / zoom;
+    const lineInv = 1 / zoom;
     layer.querySelectorAll<HTMLElement>(".wmpin").forEach((el) => {
-      el.style.transform = `translate(-50%, -50%) scale(${inv})`;
+      el.style.transform = `translate(-50%, -50%) scale(${pinInv})`;
     });
     layer.querySelectorAll<SVGElement>(".wmroute").forEach((el) => {
-      el.setAttribute("stroke-width", String(Math.max(2, 3 * inv)));
+      el.setAttribute("stroke-width", String(Math.max(2, 3 * lineInv)));
     });
     syncTiles();
     syncLabels();
   }
 
-  // Wheel zoom, anchored on the cursor.
   stage.addEventListener(
     "wheel",
     (e) => {
@@ -411,9 +411,6 @@ export function render(route: RouteDef, ctx: ViewCtx, rerender: () => void): HTM
     { passive: false },
   );
 
-  // Drag to pan, with either button. Right drag exists so that during
-  // add-marker mode the map can be repositioned with no risk of dropping a
-  // pick, since only button 0 can ever pick.
   let dragging = false;
   let moved = false;
   let panButton = -1;
@@ -442,19 +439,16 @@ export function render(route: RouteDef, ctx: ViewCtx, rerender: () => void): HTM
     dragging = false;
     stage.releasePointerCapture(e.pointerId);
     if (panButton === 2 || moved || mode.kind === "view") return;
-    // A left click (not a drag) while in add-marker mode.
     const r = stage.getBoundingClientRect();
     const px = (e.clientX - r.left - offX) / zoom;
     const py = (e.clientY - r.top - offY) / zoom;
     handlePick(px, py, rerender);
   });
 
-  // A cancelled drag would otherwise leave the map stuck following the cursor.
   stage.addEventListener("pointercancel", () => {
     dragging = false;
   });
 
-  // Otherwise the browser menu pops on every right drag.
   stage.addEventListener("contextmenu", (e) => e.preventDefault());
 
   return wrap;
@@ -474,7 +468,12 @@ function handlePick(px: number, py: number, rerender: () => void) {
   rerender();
 }
 
-function controls(route: RouteDef, rerender: () => void, refit: () => void): HTMLElement {
+function controls(
+  route: RouteDef,
+  rerender: () => void,
+  refit: () => void,
+  onSizes: () => void,
+): HTMLElement {
   const bar = document.createElement("div");
   bar.className = "wmbar";
 
@@ -497,10 +496,48 @@ function controls(route: RouteDef, rerender: () => void, refit: () => void): HTM
     btns.appendChild(b);
   };
 
+  const sizer = (text: string, key: keyof SizePrefs) => {
+    const wrap = document.createElement("label");
+    wrap.className = "wmsize";
+
+    const name = document.createElement("span");
+    name.textContent = text;
+    wrap.appendChild(name);
+
+    const input = document.createElement("input");
+    input.type = "range";
+    input.min = String(SIZE_MIN);
+    input.max = String(SIZE_MAX);
+    input.step = "0.1";
+    input.value = String(sizePrefs[key]);
+
+    const out = document.createElement("span");
+    out.className = "wmsizeval";
+    out.textContent = `${sizePrefs[key].toFixed(1)}x`;
+
+    input.addEventListener("input", () => {
+      sizePrefs[key] = clampMul(parseFloat(input.value));
+      out.textContent = `${sizePrefs[key].toFixed(1)}x`;
+      saveSizes();
+      onSizes();
+    });
+
+    wrap.appendChild(input);
+    wrap.appendChild(out);
+    btns.appendChild(wrap);
+  };
+
   if (mode.kind === "view") {
     mk(labelsOn ? "labels on" : "labels off", () => {
       labelsOn = !labelsOn;
       localStorage.setItem(LABELS_KEY, labelsOn ? "1" : "0");
+      rerender();
+    });
+    sizer("icons", "pin");
+    sizer("labels", "label");
+    mk("reset sizes", () => {
+      sizePrefs = { ...SIZE_DEFAULTS };
+      saveSizes();
       rerender();
     });
     mk("reset view", refit);

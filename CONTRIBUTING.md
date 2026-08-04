@@ -189,6 +189,41 @@ Current-and-baked was chosen deliberately, because an accurate map with Varlamor
 on it beats being able to hide icons. There is no bare variant on the current
 version: `base`, `terrain`, `plain`, `raw` and `noicons` all 404.
 
+## Map sizing and panning
+
+Pins and labels sit inside a layer that is scaled by `zoom`, so anything drawn on
+them has to be counter-scaled or it shrinks with the terrain.
+
+A flat `1/zoom` counter-scale is the obvious move and it reads badly. It pins
+things to a constant size on screen, so at full zoom the terrain is at 16 px per
+game square and the name or marker sitting on it is still the size it was at world
+view, which looks tiny. So both grow with zoom instead, through `growth()`: a cube
+root of pixels-per-square, clamped at both ends. Cube root because linear growth is
+far too aggressive across a 60x zoom range, a floor so nothing becomes unreadable,
+a ceiling so nothing swamps the map.
+
+- `labelScale()` uses a 2.2 ceiling.
+- `pinScale()` uses 2.6, higher because a pin is a target you click rather than
+  text you read. In practice the reachable zoom range tops out at 1.89, so that
+  ceiling is a safety cap rather than something you hit.
+- Base sizes live in CSS on `.wmpindot` and `.wmlabel`. A 26 px dot renders at
+  49 px at full zoom. Change the CSS number to resize everything, change the
+  `0.75` coefficient in `growth()` to change how fast it grows.
+
+On top of that, `sizePrefs` holds user multipliers for pins and labels, persisted
+under `osrs-companion:mapsize:v1` and clamped to 0.5x to 3x on both write and read,
+so a hand-edited or corrupt value cannot break the map. The sliders call `apply()`
+directly rather than triggering a rerender, because dragging one should feel
+continuous rather than rebuilding the DOM per input event.
+
+**Panning is clamped, and the clamp lives in `apply()` on purpose.** `apply()` is
+the single funnel that writes the layer transform, so clamping there covers drag,
+wheel zoom and fit alike without each having to remember. When the world is larger
+than the viewport the viewport is kept inside it, and when it is smaller the world
+is centred. Without this you can drag the world completely off screen and be left
+staring at empty background with no cue which way back, which reads as the map
+being broken.
+
 ## Labels
 
 The wiki tiles contain **no text at any zoom.** Checked on a full z0 tile covering
@@ -307,6 +342,15 @@ The `:tab` value `"flips"` is migrated to `"market"` on load.
   bug.
 - **Keep the outgoing tile level alive until the incoming one has loaded.**
   `purgeStale()` exists so a zoom step does not flash through empty background.
+- **`image-rendering` is set per tile level, not globally.** Nearest neighbour is
+  only right past native resolution. Below it you want the averaging, or
+  downscaled tiles crawl with aliasing as you pan.
+- **Wiki titles carry disambiguators that mean nothing on a map**, so
+  `cleanName()` strips the trailing `(location)`, `(island)`, `(area)`,
+  `(region)` and `(surface)` before a name is drawn.
+- **A missing `labels.json` is survivable and must stay that way.** The fetch
+  failing leaves the array empty and the map still works, just without names. Do
+  not make it throw.
 - **Right drag pans and can never pick.** Only button 0 picks, and only when the
   pointer did not move past a 3 px threshold. This exists so the map can be
   repositioned during add-marker mode without dropping a marker by accident.
