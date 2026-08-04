@@ -27,6 +27,17 @@ const ANCHORS = Number(process.env.ANCHORS ?? 25);
 const THRESHOLD = Number(process.env.THRESHOLD ?? 0.75);
 const CALIBRATE = process.env.CALIBRATE === "1";
 const TOL = Number(process.env.TOL ?? 16);
+const PROBE = process.env.PROBE === "1";
+
+// MainIcons.json stops at sprite 1695 and is itself from the 2019 app, so the
+// obvious worry is icon types added since that we could never detect. PROBE=1
+// checks. It has been run: ids 1752-1764 and 1802 do exist beyond the catalogue,
+// but they are 40x40 with 5 or 6 colours rather than 15x15, so they are the
+// separate "map icon orbs" asset family and are not composited into tiles. Added
+// to the sprite set they match nothing, which is the right answer. Left empty
+// deliberately.
+const EXTRA_SPRITES = [];
+const PROBE_RANGE = [1448, 1900];
 
 if (!existsSync(TILES)) {
   console.error("public/tiles/3 not found. Run: node scripts/fetch-tiles.mjs");
@@ -42,14 +53,34 @@ async function getJson(url) {
 const defs = await getJson(DEFS);
 await mkdir(OUT_DIR, { recursive: true });
 
+const catalogue = Object.entries(defs.icons).map(([key, d]) => ({ key, file: d.filename, name: d.name, category: d.category ?? "" }));
+
+if (PROBE) {
+  const known = new Set(catalogue.map((c) => parseInt(c.file)));
+  const hits = [];
+  for (let id = PROBE_RANGE[0]; id <= PROBE_RANGE[1]; id++) {
+    if (known.has(id)) continue;
+    const r = await fetch(`${defs.folder}${id}-0.png`, { headers: { "User-Agent": UA } });
+    if (r.ok) hits.push(id);
+  }
+  console.log(`probe over ${PROBE_RANGE[0]}..${PROBE_RANGE[1]} found ${hits.length} sprites absent from MainIcons.json:`);
+  console.log(`  const EXTRA_SPRITES = [${hits.join(", ")}];`);
+  process.exit(0);
+}
+
+for (const id of EXTRA_SPRITES) {
+  catalogue.push({ key: `extra_${id}`, file: `${id}-0.png`, name: `Map icon ${id}`, category: "unlisted" });
+}
+
 const sprites = [];
 const types = {};
 let pulled = 0;
 
-for (const [key, d] of Object.entries(defs.icons)) {
-  const dest = join(OUT_DIR, d.filename);
+for (const d of catalogue) {
+  const key = d.key;
+  const dest = join(OUT_DIR, d.file);
   if (!existsSync(dest)) {
-    const r = await fetch(`${defs.folder}${d.filename}`, { headers: { "User-Agent": UA } });
+    const r = await fetch(`${defs.folder}${d.file}`, { headers: { "User-Agent": UA } });
     if (!r.ok) continue;
     await writeFile(dest, Buffer.from(await r.arrayBuffer()));
     pulled++;
@@ -64,7 +95,7 @@ for (const [key, d] of Object.entries(defs.icons)) {
   }
   if (!opaque.length) continue;
   sprites.push({ key, w: im.width, h: im.height, opaque });
-  types[key] = { file: d.filename, name: d.name, category: d.category ?? "" };
+  types[key] = { file: d.file, name: d.name, category: d.category };
 }
 console.log(`${sprites.length} sprites (${pulled} newly downloaded)`);
 
