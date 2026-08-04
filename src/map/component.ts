@@ -52,6 +52,8 @@ interface ViewState {
   query: string;
 }
 
+const BLANK_GIF =
+  "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
 const ICON_BASE_PX = 22;
 const MAX_ZOOM = 2;
 const FLY_ZOOM = 0.75;
@@ -255,6 +257,13 @@ export function createMap(opts: MapOptions): HTMLElement {
     return lv;
   }
 
+  function drop(im: HTMLImageElement) {
+    im.onload = null;
+    im.onerror = null;
+    if (!im.complete) im.src = BLANK_GIF;
+    im.remove();
+  }
+
   function purgeStale(current: number) {
     const lv = levels.get(current);
     if (!lv) return;
@@ -264,6 +273,8 @@ export function createMap(opts: MapOptions): HTMLElement {
     }
     for (const [z, other] of [...levels]) {
       if (z === current) continue;
+      for (const im of other.tiles.values()) drop(im);
+      other.tiles.clear();
       other.el.remove();
       levels.delete(z);
     }
@@ -310,11 +321,11 @@ export function createMap(opts: MapOptions): HTMLElement {
         im.style.top = `${o.y}px`;
         im.style.width = `${size}px`;
         im.style.height = `${size}px`;
-        im.addEventListener("error", () => {
+        im.onerror = () => {
           im.style.visibility = "hidden";
           purgeStale(pickTileZoom(view.zoom));
-        });
-        im.addEventListener("load", () => purgeStale(pickTileZoom(view.zoom)));
+        };
+        im.onload = () => purgeStale(pickTileZoom(view.zoom));
         im.src = tileUrl(z, tx, ty);
         lv.el.appendChild(im);
         lv.tiles.set(key, im);
@@ -327,7 +338,7 @@ export function createMap(opts: MapOptions): HTMLElement {
       for (const [k, im] of [...lv.tiles]) {
         if (lv.tiles.size <= TILE_CACHE) break;
         if (need.has(k)) continue;
-        im.remove();
+        drop(im);
         lv.tiles.delete(k);
       }
     }

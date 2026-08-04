@@ -667,6 +667,36 @@ armed and never run.
 Measured before and after on the same drive: **3.73ms per `pointermove` down to
 0.01ms.**
 
+### The other half: tiles arriving late is a different bug
+
+Fixing the CPU cost above does not fix tiles that appear seconds or minutes
+late, because that is a network queue rather than a busy main thread. The tell
+is that labels and icons are drawn correctly over black ground, and that it
+heals on its own without a reload. The tiles were requested, they are just still
+in the queue.
+
+Two causes, both fixed, both easy to reintroduce:
+
+- **Vite serves everything in `public/` with `Cache-Control: no-cache.`** That is
+  correct for source you are editing and wrong for 8727 tiles that never change
+  for a given `VERSION`. Without an override, every tile you pan back over is a
+  fresh full download, so a couple of minutes of zooming turned 117 needed tiles
+  into over two thousand network requests, all queued behind the browser's six
+  connections per host. `vite.config.ts` sets a long immutable cache header for
+  `/tiles`, `/tiles-clean` and `/mapicons` on both the dev and preview servers.
+  Measured on identical storms: **2214 network requests and 69.6 MB down to 394
+  and 11.6 MB.**
+- **Removing an `<img>` from the DOM does not cancel its request.** Purged zoom
+  levels and LRU-evicted tiles kept their downloads alive, sitting in the queue
+  ahead of the tiles actually on screen. `drop()` detaches the handlers and
+  reassigns `src` first.
+
+**Cancel by assigning a data URI, never `src = ""`.** An empty string resolves
+against the document URL, so it aborts the tile and then requests the page
+itself, once per tile. `BLANK_GIF` exists for this. The handlers are nulled
+before the reassignment because otherwise the abort fires `onerror`, which calls
+`purgeStale()`, which is what is doing the dropping.
+
 ## Gotchas that will bite you
 
 - **The nav bar and footer are built once and never rebuilt.** `draw()` wipes only
