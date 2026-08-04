@@ -46,6 +46,11 @@ Everything it checks is described in this file.
 Contributions are accepted under AGPL-3.0, the same licence as the rest of the
 project. There is no CLA and you keep your copyright.
 
+[CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) is short and worth thirty seconds. The
+summary is that blunt technical disagreement is welcome and being a dick to people
+is not, which are easier to tell apart than the length of most such documents
+suggests.
+
 ## The one hard rule
 
 **No third party content may enter this repository.** Not map tiles, not wiki
