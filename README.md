@@ -11,12 +11,17 @@ and it's why there's nothing here that could trip a ToS line.
 
 ```bash
 npm install
-node scripts/fetch-tiles.mjs    # one time, pulls ~34 MB of map tiles
-npm run dev                     # http://localhost:5273
+node scripts/fetch-tiles.mjs     # one time, ~34 MB of map tiles
+node scripts/fetch-labels.mjs    # one time, place names
+npm run dev                      # http://localhost:5273
 ```
 
-The tiles are not in the repo (8530 files) and the map tab is blank without
-them. The fetch is resumable, so a killed run just picks up where it stopped.
+Neither fetch is in the repo, and the map tab is blank without the tiles. That
+is deliberate rather than a size optimisation: this repository contains no third
+party content, so what you download is your own local copy. See
+[ATTRIBUTION.md](ATTRIBUTION.md).
+
+The tile fetch is resumable, so a killed run picks up where it stopped.
 
 Leave it open on your second monitor. State lives in `localStorage`, so it
 survives refreshes and reboots.
@@ -105,6 +110,36 @@ being a local page with no install and no background service.
 - `src/worldmapview.ts` the tile viewer: pan, zoom, pins, labels, markers.
 - `scripts/fetch-tiles.mjs` pulls the map tiles.
 - `scripts/fetch-labels.mjs` rebuilds `public/labels.json` from the wiki.
+
+## Fight Caves trainer
+
+A practice sim for the fight that actually kills people. Faithful 600ms tick
+engine, real OSRS ranged damage model, Jad with the un-telegraphed melee hit
+when you drift adjacent, and healers that aggro and chase so you have to kite
+them properly.
+
+It never touches the game client or Jagex servers. It is a standalone game that
+reimplements documented mechanics, so it is somewhere safe to drill the thing
+that costs you the cape.
+
+Click to move, click Jad to attack. `1` mage, `2` range, `3` melee, `0` none.
+`Space` toggles run, `R` restarts, `H` toggles the coaching hints.
+
+## Licence and attribution
+
+Code here is original and licensed **AGPL-3.0** (see [LICENSE](LICENSE)).
+
+AGPL rather than MIT on purpose. If you fork this, add to it, and host it
+somewhere, you have to publish your source to the people using it. Take it,
+improve it, run it, sell support for it if you like. You just cannot close it
+and charge people for access to something they can't see.
+
+The wiki data the app uses is fetched at setup and is not redistributed here.
+The full picture is in [ATTRIBUTION.md](ATTRIBUTION.md), including why the fetch
+step exists.
+
+No game assets, no decompiled code, nothing from private server repos. If you
+contribute, hold that line.
 
 ## Roadmap
 
