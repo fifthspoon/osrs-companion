@@ -14,6 +14,9 @@ let store: Store = load();
 
 type Tab = "dailies" | string; // string = a route id
 let tab: Tab = (localStorage.getItem("osrs-companion:tab") as Tab) || "dailies";
+// The market tab used to be called "flips". Migrate rather than dumping anyone
+// who had it open back to Dailies.
+if (tab === "flips") tab = "market";
 
 // Tracks readiness between ticks so a notification fires on the transition into
 // ready, not every second while it sits there ready.
@@ -61,7 +64,7 @@ function tabBar(): HTMLElement {
   const items: [Tab, string][] = [
     ["dailies", "Dailies"],
     ...ROUTES.map((r) => [r.id, r.name] as [Tab, string]),
-    ["flips", "Flips"],
+    ["market", "Market"],
     ["fight", "Fire cape"],
   ];
   for (const [id, label] of items) {
@@ -88,7 +91,7 @@ function draw() {
 
   if (tab === "dailies") {
     renderDailies(body, store, Date.now(), handlers);
-  } else if (tab === "flips") {
+  } else if (tab === "market") {
     body.appendChild(geview.render(draw));
   } else if (tab === "fight") {
     body.appendChild(fightview.render());

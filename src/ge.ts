@@ -109,6 +109,8 @@ export interface FlipOpts {
   capital: number;
   minVolume: number;   // units per hour, both directions
   maxAgeSec: number;   // reject prices older than this
+  minRoi: number;      // fraction, so 0.02 is 2%
+  maxBuy: number;      // per-item ceiling, 0 for no limit
   membersOk: boolean;
 }
 
@@ -135,10 +137,13 @@ export function computeFlips(m: Market, o: FlipOpts): Flip[] {
     if (volume < o.minVolume) continue;
 
     const buy = p.low;
+    if (o.maxBuy > 0 && buy > o.maxBuy) continue;
+
     const sell = p.high;
     const tax = geTax(sell, id);
     const net = sell - tax - buy;
     if (net <= 0) continue;
+    if (net / buy < o.minRoi) continue;
 
     // The 4 hour buy limit is the real ceiling on a flip, not your wallet.
     const limit = item.limit ?? 0;

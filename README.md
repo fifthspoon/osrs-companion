@@ -125,7 +125,7 @@ that costs you the cape.
 Click to move, click Jad to attack. `1` mage, `2` range, `3` melee, `0` none.
 `Space` toggles run, `R` restarts, `H` toggles the coaching hints.
 
-## Flips
+## Market
 
 Live Grand Exchange margins from the wiki's free real-time prices API, with the
 maths done properly.
@@ -165,7 +165,7 @@ contribute, hold that line.
 
 The wider idea is one place for the whole optimisation problem. What comes next:
 
-1. **GE watchlist.** Pin items, set buy-below and sell-above thresholds, get a
+1. **Market watchlist.** Pin items, set buy-below and sell-above thresholds, get a
    desktop notification when a price crosses one. Fires on the crossing, not
    every poll while it sits there, same as the dailies.
 2. **Goal tracker** for long grinds, with progress pulled from your hiscores so
