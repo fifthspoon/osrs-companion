@@ -163,15 +163,16 @@ contribute, hold that line.
 
 ## Roadmap
 
-This is slice one. The wider idea is one place for the whole optimisation
-problem, so the pieces that would come next:
+The wider idea is one place for the whole optimisation problem. What comes next:
 
-1. **Goal tracker** for long grinds, with progress pulled from your hiscores so
+1. **GE watchlist.** Pin items, set buy-below and sell-above thresholds, get a
+   desktop notification when a price crosses one. Fires on the crossing, not
+   every poll while it sits there, same as the dailies.
+2. **Goal tracker** for long grinds, with progress pulled from your hiscores so
    it updates itself. Herblore 59 to 90 as a bar that moved this week rather
    than 5.1M xp as a wall of text.
-2. **"What do I do now?"** reading goals plus stats to answer the single
+3. **"What do I do now?"** reading goals plus stats to answer the single
    question that costs the most activation energy.
-3. **Prep checklists** per activity, gear and requirement checks for capes,
+4. **Prep checklists** per activity, gear and requirement checks for capes,
    quests, raids.
-4. **The Jad/Inferno sim** (already built, separate repo at
-   `../osrs-tick-trainer`) folded in as one view among several.
+5. **More routes**, and the full 63 wave Fight Caves spawner, then Inferno.
