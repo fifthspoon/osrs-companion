@@ -43,18 +43,16 @@ attribute the OSRS Wiki, share alike, non-commercial only.
 Fetched by `scripts/fetch-icons.mjs` from `maps.runescape.wiki` into
 `public/mapicons/` and `public/mapicons.json`, both of which are gitignored.
 
-Two things are pulled: the placement data (which icon sits at which in-game
-coordinate) and the icon images themselves. The images are Jagex artwork rendered
-by Weird Gloop, exactly like the map tiles, so **the same non-transitive
-permission applies and they are not redistributed here.** Running the fetch makes
-your own local copy for your own use.
+Only one thing is downloaded: the icon images. They are Jagex artwork rendered by
+Weird Gloop, exactly like the map tiles, so **the same non-transitive permission
+applies and they are not redistributed here.** Running the fetch makes your own
+local copy for your own use. About 25 KB in total.
 
-The placement data is a coordinate list, and coordinates are facts rather than
-creative expression, but it is served from the same wiki infrastructure and is
-treated the same way for the same reason given under location names: not worth
-arguing, and the script rebuilds it in seconds.
-
-The whole set is about 180 KB, so unlike the tiles this is quick.
+The placements are not downloaded at all. The script finds them by scanning the
+tiles already on your disk for those sprites, so the coordinate list is derived
+locally from your own copy rather than taken from anywhere. It is also plain
+factual data: where a thing is, which is not creative expression. It stays
+gitignored regardless, on the same reasoning as everything else here.
 
 ### Fight Caves simulation
 

@@ -3,7 +3,7 @@ import {
   loadMarkers, saveMarkers,
   worldToPx, pxToWorld,
   pickTileZoom, tileSpan, tileBaseSize, tileOrigin, tileRange, tileUrl,
-  PX_PER_SQUARE, WORLD_BOUNDS, BASE_W, BASE_H,
+  PX_PER_SQUARE, NATIVE_Z, WORLD_BOUNDS, BASE_W, BASE_H,
 } from "./worldmap";
 import type { CustomMarker } from "./worldmap";
 
@@ -40,9 +40,10 @@ let iconsLoading: Promise<void> | null = null;
 const ICON_MIN_PER_SQUARE = 1.5;
 
 interface IconData {
-  sourceVintage: string;
+  source: string;
+  threshold: number;
   types: Record<string, { file: string; name: string; category: string }>;
-  icons: [string, number, number][];
+  icons: [string, number, number, number][];
 }
 
 const SIZE_KEY = "osrs-companion:mapsize:v1";
@@ -328,7 +329,11 @@ export function render(route: RouteDef, ctx: ViewCtx, rerender: () => void): HTM
       return;
     }
 
-    const inv = iconScale(perSquare) / zoom;
+    // The baked icon underneath is 15 source pixels blown up by however much
+    // the current tile level is being stretched. Ours has to be at least that
+    // big or the two show as a ghost pair instead of one icon.
+    const baked = (1 << (NATIVE_Z - pickTileZoom(zoom))) * zoom;
+    const inv = Math.max(iconScale(perSquare), baked) / zoom;
     const x0 = -offX / zoom;
     const y0 = -offY / zoom;
     const x1 = (r.width - offX) / zoom;

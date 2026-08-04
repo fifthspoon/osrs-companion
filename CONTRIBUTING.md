@@ -88,7 +88,7 @@ installs a binary never sees the readme.
 npm install
 node scripts/fetch-tiles.mjs     # ~34 MB of map tiles, resumable
 node scripts/fetch-labels.mjs    # place names into public/labels.json
-node scripts/fetch-icons.mjs     # ~180 KB of map icons and their placements
+node scripts/fetch-icons.mjs     # scans the tiles for icons, run AFTER fetch-tiles
 npm run dev                      # http://localhost:5273
 npm run build                    # tsc --noEmit then vite build
 ```
@@ -246,32 +246,64 @@ raster as the terrain.
 wrong trade: it blurs all the terrain to enlarge the annotation drawn on top of
 it, reversing the deliberate round-up-for-sharpness choice in that function.
 
-The fix is the same one labels already use: stop using baked pixels. `fetch-icons.mjs`
-pulls the placements and the icon images, and the viewer draws them as counter-scaled
-elements that obey `iconScale()` and the user's size slider, so they never shrink.
+The fix is the same one labels already use: stop using baked pixels. The viewer
+draws icons as counter-scaled elements obeying `iconScale()` and the user's size
+slider, so they never shrink.
 
-**Known limits, which are the price of this and must not be hidden from users:**
+### Where the placements come from
 
-- The only placement dataset the wiki serves is vintage `2019-10-31_1`. There is
-  no current one. The versioned `2026-07-29_a` paths and `chisel.weirdgloop.org`
-  all 404, and building placements from the wiki API instead is not viable:
-  Category:Altars and Category:Fishing spots are both empty and `Herb patch`
-  carries no `{{Map}}` template.
-- So **everything added from 2020 onward has no overlay icons.** Varlamore, Ferox
-  Enclave and Darkmeyer all return zero. Pre-2020 content is well covered:
-  Varrock 53, Ardougne 41, Fossil Island 40.
-- The baked wiki icons stay visible underneath and remain the fallback of record,
-  which is why the overlay is a toggle rather than a replacement. A user seeing no
-  overlay icon in Varlamore must not conclude there is no bank there.
-- The overlay is hidden below `ICON_MIN_PER_SQUARE` (1.5 px per game square).
-  That is a load and a legibility decision: worst case on screen is 510 icons at
-  that threshold, comparable to the 507 labels, against 853 at 1.0 and 1245 at 0.5.
-- Only plane 0 is kept. The viewer draws ground level, so the 153 icons on upper
-  floors would sit on terrain they do not belong to.
+**`fetch-icons.mjs` finds them by scanning your downloaded tiles for the wiki's
+own icon sprites.** It does not download a placement list, and this is deliberate.
 
-Verified when built: the GeoJSON coordinates are the same in-game coordinate
-system this app uses, no transform needed. Varrock west bank, the Grand Exchange,
-Lumbridge, Falador east bank and Edgeville all resolve to the right icons.
+The wiki does publish one, at `data/overlayMaps/MainMapIconLoc.json`, and it is
+useless on its own: it is vintage `2019-10-31_1`, so it has **zero** icons in
+Varlamore, Ferox Enclave or Darkmeyer. There is no current one. The versioned
+`2026-07-29_a` paths and `chisel.weirdgloop.org` all 404, and rebuilding
+placements from the wiki API is not viable either, since Category:Altars and
+Category:Fishing spots are empty and `Herb patch` has no `{{Map}}` template.
+**Do not go looking for a fresher source. That lead is dead.**
+
+Scanning works because the sprites are composited into the tiles **pixel exact**.
+The first test done was a straight template match of the bank sprite against the
+z3 tile covering Varrock west bank: 177 of 177 opaque pixels, a 100% match.
+
+The scan finds 2727 icons where the published list has 1792, Varlamore included,
+in about 90 seconds over 6392 tiles.
+
+### The three numbers that make it work
+
+Calibrated against the published 2019 list, scoring only the pre-2019 core
+(Varrock, Falador, Lumbridge, Barbarian Village) where that list is trustworthy.
+`CALIBRATE=1 node scripts/fetch-icons.mjs` reruns this.
+
+- **`ANCHORS = 25`.** This is the one that matters, and it is not obvious. The
+  scan indexes sprites by their rarest colours and only verifies a candidate when
+  an anchor pixel matches exactly, so an occluded anchor means the icon is never
+  even tested. At 5 anchors recall was 62%. At 12 it was 94%. At 25 it is **96%**,
+  and 60 changes nothing because the index saturates. If recall ever looks bad,
+  look here first rather than at the threshold.
+- **`THRESHOLD = 0.75`.** The knee. Going down to 0.62 buys almost no recall and
+  triples the unmatched rate. Going up to 0.85 costs a lot of recall for nothing.
+- **`TOL = 16`.** Per channel. 6 is too tight for sprites blended over terrain,
+  and past 32 it starts inventing.
+
+At those values: **96.1% recall**, and the 9.8% of detections the 2019 list does
+not know about all score 80% or better on pixel match, so they are seven years of
+real map changes rather than noise.
+
+### Other constraints
+
+- **The overlay must never be smaller on screen than the baked icon underneath**,
+  or you see a ghost pair instead of one icon. `syncIcons()` floors the scale at
+  `(1 << (NATIVE_Z - pickTileZoom(zoom))) * zoom`, which is how much the current
+  tile level is being stretched. At full zoom the two are both 30 px and ours
+  covers exactly.
+- The overlay is hidden below `ICON_MIN_PER_SQUARE` (1.5 px per game square), a
+  load and legibility limit: worst case on screen is around 510 icons there,
+  comparable to the 507 labels, against 853 at 1.0 and 1245 at 0.5.
+- Icons on upper floors are not a problem here the way they were with the
+  published list, because the scan only ever sees the ground level tiles.
+- `pngjs` is a devDependency for this script alone. It never reaches the browser.
 
 ## Labels
 
@@ -360,7 +392,7 @@ whenever a number looks off:
 | `src/fight/` | Renderer, input, guide and loadout panels |
 | `scripts/fetch-tiles.mjs` | Pulls the tile pyramid. Resumable |
 | `scripts/fetch-labels.mjs` | Builds `public/labels.json` from the wiki API |
-| `scripts/fetch-icons.mjs` | Builds `public/mapicons.json` and pulls the icon images |
+| `scripts/fetch-icons.mjs` | Scans the tiles for icon sprites, builds `public/mapicons.json` |
 
 localStorage keys: `osrs-companion:v1` (tasks), `:run:v1`, `:markers:v1`,
 `:labels:v1` (label toggle), `:ge:v1` (market filters), `:tab`.

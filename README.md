@@ -30,7 +30,7 @@ Needs Node 18 or newer.
 npm install
 node scripts/fetch-tiles.mjs     # one time, ~34 MB of map tiles
 node scripts/fetch-labels.mjs    # one time, place names
-node scripts/fetch-icons.mjs     # one time, ~180 KB of map icons
+node scripts/fetch-icons.mjs     # one time, scans the tiles for map icons, ~90s
 npm run dev                      # http://localhost:5273
 ```
 
@@ -61,15 +61,16 @@ prefer it clean.
 Map icons (banks, altars, farming patches, fishing spots and 100 more types) are
 drawn as their own layer rather than read off the tile pixels. The wiki bakes its
 icons in at a fixed size per tile, which means they shrink every time you zoom in
-and there is nothing you can do about it. Drawn as a layer they hold their size,
-and there are sliders for pins, icons and labels plus a reset, because no single
-size suits every screen.
+and there is nothing you can do about that from the outside. Drawn as a layer they
+hold their size, and there are sliders for pins, icons and labels plus a reset,
+because no single size suits every screen.
 
-One honest limitation: the only icon placement data the wiki publishes dates from
-2019, so **anything added since has no overlay icons**, Varlamore included. The
-wiki's own baked icons are still there underneath, so nothing is hidden, but do
-not read an empty patch of Varlamore as "no bank here". Toggle the layer off to
-see the wiki's own set.
+The placements are found by scanning your own downloaded tiles for the icons,
+which is why they are current. The only placement list the wiki publishes is from
+2019 and has nothing in Varlamore at all. Scanning finds 2727 icons where that
+list has 1792, and it was checked against the list in the areas the list still
+covers properly: 96% of them found, and everything it found beyond them was a real
+icon rather than a false alarm.
 
 ## Design rules
 
@@ -141,7 +142,7 @@ being a local page with no install and no background service.
 - `src/worldmapview.ts` the tile viewer: pan, zoom, pins, labels, markers.
 - `scripts/fetch-tiles.mjs` pulls the map tiles.
 - `scripts/fetch-labels.mjs` rebuilds `public/labels.json` from the wiki.
-- `scripts/fetch-icons.mjs` pulls the map icon overlay and its placements.
+- `scripts/fetch-icons.mjs` scans the tiles to build the map icon overlay.
 
 ## Fight Caves trainer
 
