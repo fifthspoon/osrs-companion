@@ -618,6 +618,55 @@ The order is load-bearing:
 3. **Reject `type === "unknown"` or a missing `latestSnapshot` regardless**, since
    stubs from other people's typos already exist and answer 200.
 
+## Map performance: what the hot path may do
+
+Panning dispatches a `pointermove` for every mouse report, which on a gaming
+mouse is 125 to 1000 times a second. Whatever that handler does, it does that
+often, on the main thread, ahead of paint. This was measured at **3.73ms per
+event** once, which saturates a core during a drag and shows up as a map that
+lags and whose tiles appear seconds late.
+
+The rule that follows: **the pan handler does the transform and nothing else.**
+
+- `applyTransform()` is synchronous and cheap. Two `style.transform` writes.
+- `heavy()` (tiles, icons, labels) is coalesced to **once per frame** by
+  `scheduleApply()`. Panning ten times between two frames does the heavy work
+  once.
+- `apply()` stays fully synchronous and is what `fit()`, `redraw()` and `flyTo()`
+  call. Do not route those through the scheduler.
+
+Four specific things that were each costing real time, listed because the obvious
+code reintroduces all of them:
+
+- **Never call `getBoundingClientRect()` in the pan path.** It forces layout. The
+  stage size is cached in `stageW` / `stageH` and refreshed by the existing
+  `ResizeObserver`. The old code called it four times per event.
+- **Never `querySelectorAll` per frame.** Pin and route elements are collected
+  into `pinEls` / `routeEls` when built.
+- **Pin scale depends on zoom, not pan**, so it is skipped when the zoom has not
+  changed. `applyTransform(force)` takes a flag because the size sliders change
+  pin scale without changing zoom, and that path must not be skipped. Same trap
+  for label scale, which compares the computed value instead.
+- **Project world coordinates once, not every frame.** All 3114 icon placements
+  and 507 labels have fixed base pixels, cached in `projectedIcons()` and
+  `projectedLabels()`. Per frame it is then a multiply and a compare. Cull on x
+  before computing y.
+
+**Tiles are retained, not destroyed, when they leave the viewport.** `TILE_CACHE`
+holds 256 per level on an LRU, so panning back is instant instead of re-creating
+and re-decoding every `<img>`. `purgeStale()` therefore checks only the currently
+visible tiles for completion, not every retained one, or a single incomplete
+off-screen tile would block level swapping forever.
+
+The scheduler arms a `requestAnimationFrame` **and** a 120ms `setTimeout`,
+whichever fires first, and cancels the other. That is deliberate for the same
+reason the fit path avoids rAF: rAF does not fire when the page is not
+compositing, and without the fallback a missed frame would leave the heavy work
+armed and never run.
+
+Measured before and after on the same drive: **3.73ms per `pointermove` down to
+0.01ms.**
+
 ## Gotchas that will bite you
 
 - **The nav bar and footer are built once and never rebuilt.** `draw()` wipes only
