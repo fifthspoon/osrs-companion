@@ -1,6 +1,9 @@
 const LABELS_KEY = "osrs-companion:labels:v1";
 const ICONS_KEY = "osrs-companion:mapicons:v1";
 const SIZE_KEY = "osrs-companion:mapsize:v1";
+const TIPS_KEY = "osrs-companion:maptips:v1";
+const PIN_KEY = "osrs-companion:mapsearchpin:v1";
+const FILTER_KEY = "osrs-companion:mapiconfilter:v1";
 
 export const SIZE_MIN = 0.5;
 export const SIZE_MAX = 3;
@@ -25,9 +28,23 @@ function loadSizes(): SizePrefs {
   }
 }
 
+function loadHidden(): Set<string> {
+  try {
+    const raw = localStorage.getItem(FILTER_KEY);
+    if (!raw) return new Set();
+    const p = JSON.parse(raw) as unknown;
+    return Array.isArray(p) ? new Set(p.filter((x): x is string => typeof x === "string")) : new Set();
+  } catch {
+    return new Set();
+  }
+}
+
 let labelsVisible = localStorage.getItem(LABELS_KEY) !== "0";
 let iconsVisible = localStorage.getItem(ICONS_KEY) !== "0";
+let tipsVisible = localStorage.getItem(TIPS_KEY) !== "0";
+let searchPin = localStorage.getItem(PIN_KEY) !== "0";
 let sizePrefs: SizePrefs = loadSizes();
+let hidden: Set<string> = loadHidden();
 
 export function labelsOn(): boolean {
   return labelsVisible;
@@ -47,6 +64,24 @@ export function setIconsOn(on: boolean): void {
   localStorage.setItem(ICONS_KEY, on ? "1" : "0");
 }
 
+export function tooltipsOn(): boolean {
+  return tipsVisible;
+}
+
+export function setTooltipsOn(on: boolean): void {
+  tipsVisible = on;
+  localStorage.setItem(TIPS_KEY, on ? "1" : "0");
+}
+
+export function searchPinned(): boolean {
+  return searchPin;
+}
+
+export function setSearchPinned(on: boolean): void {
+  searchPin = on;
+  localStorage.setItem(PIN_KEY, on ? "1" : "0");
+}
+
 export function sizes(): SizePrefs {
   return sizePrefs;
 }
@@ -60,4 +95,30 @@ export function setSize(key: SizeKey, value: number): number {
 export function resetSizes(): void {
   sizePrefs = { ...SIZE_DEFAULTS };
   localStorage.setItem(SIZE_KEY, JSON.stringify(sizePrefs));
+}
+
+function saveHidden(): void {
+  localStorage.setItem(FILTER_KEY, JSON.stringify([...hidden]));
+}
+
+export function iconTypeOn(key: string): boolean {
+  return !hidden.has(key);
+}
+
+export function setIconTypeOn(key: string, on: boolean): void {
+  if (on) hidden.delete(key);
+  else hidden.add(key);
+  saveHidden();
+}
+
+export function setIconTypesOn(keys: string[], on: boolean): void {
+  for (const k of keys) {
+    if (on) hidden.delete(k);
+    else hidden.add(k);
+  }
+  saveHidden();
+}
+
+export function hiddenIconCount(): number {
+  return hidden.size;
 }

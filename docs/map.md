@@ -24,9 +24,10 @@ So the file is now `src/map/`, split four ways, and the route is just one caller
 | File | Owns |
 | --- | --- |
 | `src/map/component.ts` | `createMap(opts)`, the stage, tiles, pins, the icon canvas, labels, pan and zoom |
-| `src/map/controls.ts` | The toolbar under the stage |
-| `src/map/data.ts` | Fetching and caching `labels.json` and `mapicons.json`, label ranking and tiering |
-| `src/map/prefs.ts` | The persisted toggles and size sliders |
+| `src/map/overlay.ts` | All chrome: the rail, the panes, search, zoom, the hint, the picking banner |
+| `src/map/search.ts` | Matching a query against place names and icon type names. Pure |
+| `src/map/data.ts` | Fetching and caching `labels.json` and `mapicons.json`, label ranking, icon type counts |
+| `src/map/prefs.ts` | Every persisted preference |
 
 ## The component contract
 
@@ -95,6 +96,74 @@ With one map ever created that was harmless, because there was never a second ca
 instances it is a real bug: a map created while the fetch is still running never gets its callback,
 so it renders with no labels until some unrelated event triggers `apply()`. The loaders now queue
 every waiter and drain the queue when the fetch settles, and call back immediately once loaded.
+
+## The overlay
+
+The controls used to be a `.wmbar` strip under the stage: eight buttons, three sliders and a status
+line all on one row, wrapping onto two rows on a narrow window. It grew that way one control at a
+time. Everything now lives on the map itself, in `src/map/overlay.ts`.
+
+The shape is a four-button rail down the top left, and **one pane at a time** beside it. Opening a
+pane closes whatever was open. That is the point of the design rather than an implementation detail:
+it is a structural cap on clutter, so the next settings group is one more rail button and never a
+taller panel. The panes are Search, Display, Icon types and Markers.
+
+Zoom sits bottom right, the status hint bottom left, and both are out of the way of the rail.
+
+`.wmoverlay` is `pointer-events: none` with `pointer-events: auto` on its children, so the map still
+pans and zooms everywhere the chrome is not. Two handlers need to know about it explicitly, and both
+are easy to lose in a later edit:
+
+- **`wheel` returns early** when the event came from inside the overlay, without calling
+  `preventDefault`. Otherwise scrolling the 119-row icon list zooms the map instead.
+- **`pointerdown` returns early** the same way, or dragging a slider pans the map under it.
+
+### Search, and why it is pinnable
+
+Search is the one control you use mid-run, so **it is visible by default**, as a permanent field
+above the pane, and the rail carries no search button while it is. Unpinning tucks it into the rail
+with everything else, for anyone who wants the map as clear as possible.
+
+That direction matters and it was wrong once. The default is visible and the pin takes it away, not
+the other way round. Everything else on this map defaults to on, and search is the control most worth
+reaching for, so making it the one thing you have to go and find was backwards.
+
+Pinned is a persisted preference in `osrs-companion:mapsearchpin:v1`, and like every other map
+preference it is global rather than per instance.
+
+A query does three things at once: matching places highlight and are **forced visible regardless of
+their zoom tier**, so searching Rellekka from the world view actually shows it; matching icons keep
+full alpha and get a ring; everything else drops to low alpha. Clearing the box restores normal
+drawing.
+
+Typing does **not** call the host's rerender. It updates the query in the view state, recomputes the
+result and repaints the canvas and labels in place. If it rerendered, the input would lose focus on
+every keystroke.
+
+### The icon filter, and the category field that does not work
+
+`mapicons.json` has a `category` per type and it is useless for grouping: 279 types across exactly
+two values, `others` (119) and `unlisted` (160). There is nothing to group on, so the pane is a
+searchable flat list instead.
+
+It shows the **119 named types sorted by placement count**, which covers 2727 of 3114 icons, 87.6%.
+The 160 unlisted types are one collapsed row worth 387 icons between them, roughly 2.4 each, and they
+have no name to search by. Hidden types are stored as a key list in
+`osrs-companion:mapiconfilter:v1` and skipped in both `drawIcons` and the tooltip hit test, so a
+hidden type cannot be hovered either.
+
+If you want real grouping, that is a change to `scripts/fetch-icons.mjs` to write a better category
+per type. It is not a UI change and no amount of work in this file will produce it.
+
+### Tooltips cover icons only
+
+Hover tooltips name the icon under the cursor. They deliberately do not cover labels or pins: a label
+is already its own name on screen and a pin already shows one, so a tooltip there would be repeating
+what you can read.
+
+Icons are canvas, not DOM, so there is nothing to hover. The hit test walks the same visible-icon list
+`drawIcons` builds and takes the **last** match, which is the one drawn on top. It respects the filter
+and the icons toggle, so anything you cannot see cannot be hovered.
 
 ## Never give the stage a height of its own
 

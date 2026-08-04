@@ -38,10 +38,13 @@ A pull request will be looked at more quickly if it does these things:
   wearing a trenchcoat.
 - **Moves the docs with the code** when it changes a feature, a setup step or an
   invariant.
+- **Contains nothing personal.** See the second hard rule below. This applies to the
+  commit message too, which is the one thing nobody re-reads before pushing.
 
 CI runs on every pull request: typecheck, build, a third party content gate over
-both the tree and the full history, and an em dash check. It has to be green.
-Everything it checks is described in this file.
+both the tree and the full history, a personal data gate over the tree and every
+commit message, and an em dash check. It has to be green. Everything it checks is
+described in this file.
 
 Contributions are accepted under AGPL-3.0, the same licence as the rest of the
 project. There is no CLA and you keep your copyright.
@@ -65,6 +68,30 @@ source. A new source means a new section in that file, in the same commit.
 `src/fight/` is an original reimplementation from publicly documented mechanics.
 No decompiled code, no game assets, nothing from private server repositories.
 Hold that line if you extend it.
+
+## The other hard rule: nothing personal
+
+This repository is public, and **history is what a clone gets**, so a delete commit
+does not undo a leak. Keep out of tracked files and out of commit messages:
+
+- Absolute local paths. `C:Users...` and the like carry a real name and a
+  directory layout, and they arrive through error messages, script defaults and
+  pasted terminal output more often than through anything deliberate.
+- Personal email addresses, webhook URLs, tokens and keys. There are no accounts in
+  this project, so anything of that shape is a mistake.
+- Names of unrelated private repositories. Mentioning one tells a reader it exists.
+- Game account identity. Character name, stat tables, bank value, hiscores links.
+
+CI checks the shapes of these on every push, with a positive control, over the tree
+and over every commit message. Identity-specific patterns are deliberately **not**
+in the workflow, because a denylist of real names in a public file publishes the
+exact strings it exists to keep out. Those live in local gitignored tooling.
+
+**If you are an AI agent, this rule is aimed at you.** You have read files the
+reader has not, and you cannot tell from inside a sentence which half a fact came
+from. Fluency is the failure mode: the more natural the prose, the easier it is for
+a private detail to ride in on it. Default to leaving personal detail out, and ask
+rather than deciding.
 
 ### If you are packaging this as a desktop build
 
@@ -539,8 +566,15 @@ whenever a number looks off:
 | `scripts/clean-tiles.mjs` | Erases the baked icons into `public/tiles-clean/`, leaves originals |
 
 localStorage keys: `osrs-companion:v1` (tasks), `:run:v1`, `:markers:v1`,
-`:labels:v1` (label toggle), `:market:v1` (market settings),
-`:market:cache:*` (endpoint caches, safe to delete), `:tab`.
+`:labels:v1` (label toggle), `:mapicons:v1` (icon toggle), `:mapsize:v1` (the
+three size sliders), `:maptips:v1` (hover tooltips), `:mapsearchpin:v1` (search
+pinned out of the rail), `:mapiconfilter:v1` (hidden icon type keys),
+`:market:v1` (market settings), `:market:cache:*` (endpoint caches, safe to
+delete), `:tab`.
+
+Every map preference is global rather than per map instance, deliberately. Turning
+labels off should turn them off everywhere. Only pan, zoom, the open pane and the
+search query are per instance, and those live in memory rather than localStorage.
 
 `:calib:v1` and `:map:v1` are **dead keys** from the old flat-map era. Nothing
 reads them. Harmless if present in an old browser profile. `:ge:v1` is read once
@@ -593,9 +627,86 @@ The `:tab` value `"flips"` is migrated to `"market"` on load.
 
 ## How to verify a change
 
+### Visual work can be looked at, so look at it
+
+The pure-module checks below cover the maths. They cover nothing about whether the
+thing renders, and this project has repeatedly shipped UI that typechecked, built,
+and had never once been seen. It is worth being blunt about why: the assumption was
+that no browser was available. That assumption was wrong.
+
+Playwright drives the dev server against your installed Chrome, with no browser
+download, and it takes about a minute to set up:
+
+```bash
+mkdir shots && cd shots && npm init -y
+PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 npm install playwright
+```
+
+```js
+const { chromium } = require("playwright");
+const browser = await chromium.launch({ channel: "chrome" });   // no download
+const page = await (await browser.newContext({
+  viewport: { width: 1440, height: 1100 },
+})).newPage();
+
+await page.goto("http://localhost:5273/", { waitUntil: "networkidle" });
+await page.evaluate(() => localStorage.setItem("osrs-companion:tab", "map"));
+await page.reload({ waitUntil: "networkidle" });
+await page.waitForTimeout(2500);                 // tiles and labels are fetched
+
+await page.locator(".wmstage").screenshot({ path: "map.png" });
+```
+
+`channel: "chrome"` is the whole trick. Without it Playwright wants its own browser
+bundle. Screenshot the `.wmstage` element rather than the page, since the map is
+usually taller than the viewport.
+
+It drives as well as it looks. Clicking real controls and reading back the DOM is
+how the map overlay was checked:
+
+```js
+await page.locator(".wmrail .wmbtn").first().click();
+await page.evaluate(() => [...document.querySelectorAll(".wmpanebody")]
+  .map((p) => ({ title: p.querySelector("h3").textContent, hidden: p.hidden })));
+
+await page.locator(".wmsearchdock input").fill("varrock");
+await page.evaluate(() => document.querySelectorAll(".wmlabel.hit").length);   // 8
+
+await page.mouse.move(x, y);
+await page.evaluate(() => document.querySelector(".wmtip").textContent);
+```
+
+**Read the numbers back, do not just look at the picture.** The bug that made every
+overlay pane render stacked on top of each other was visible in a screenshot, but
+what proved it was `p.hidden === true` on an element whose height was not zero:
+`.wmpanebody` sets `display: flex`, and an author `display` rule beats the `hidden`
+attribute's `display: none` from the UA stylesheet. Any element you hide with
+`.hidden = true` needs `[hidden] { display: none !important; }` if its class sets a
+display.
+
+### The pure-module checks
+
 There is no test suite. What works is importing the pure modules and asserting on
 their maths, which covers the parts where being wrong actually costs something.
 Run the ones touching what you changed:
+
+**The `?t=` cache-buster below is a trap for anything that reads module state.**
+`import('/src/map/data.ts?t=1')` is a *different module instance* from
+`/src/map/data.ts`, with its own empty caches. Worse, Vite's HMR appends its own
+timestamp to internal imports after an edit, so a module you imported by plain path
+may not be the one your other imports are talking to. Priming one and reading the
+other reports zero results over data that loaded perfectly.
+
+It is harmless for pure functions like `worldToPx` and `geTax`, which is why it went
+unnoticed. For `src/map/data.ts` and anything else with a module-level cache, ask the
+dev server which URL is really in the graph:
+
+```js
+const src = await (await fetch('/src/map/search.ts')).text();
+const dataUrl = src.match(/from\s+"([^"]*\/data\.ts[^"]*)"/)[1];
+const d = await import(dataUrl);        // "/src/map/data.ts?t=1785863280286"
+await new Promise((r) => d.ensureLabels(r));
+```
 
 ```js
 // the map transform is exact arithmetic, so it is directly checkable

@@ -57,12 +57,45 @@ function drain(queue: Array<() => void>): void {
   for (const fn of pending) fn();
 }
 
+export interface IconTypeInfo {
+  key: string;
+  name: string;
+  count: number;
+  unlisted: boolean;
+}
+
+let typeList: IconTypeInfo[] | null = null;
+
 export function labels(): LabelDef[] {
   return labelData;
 }
 
 export function icons(): IconData | null {
   return iconData;
+}
+
+export function iconTypes(): IconTypeInfo[] {
+  if (typeList) return typeList;
+  if (!iconData) return [];
+  const counts = new Map<string, number>();
+  for (const [key] of iconData.icons) counts.set(key, (counts.get(key) ?? 0) + 1);
+  typeList = Object.entries(iconData.types)
+    .map(([key, t]) => ({
+      key,
+      name: t.name,
+      count: counts.get(key) ?? 0,
+      unlisted: t.category === "unlisted",
+    }))
+    .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+  return typeList;
+}
+
+export function namedIconTypes(): IconTypeInfo[] {
+  return iconTypes().filter((t) => !t.unlisted);
+}
+
+export function unlistedIconTypes(): IconTypeInfo[] {
+  return iconTypes().filter((t) => t.unlisted);
 }
 
 export function ensureLabels(onReady: () => void): void {

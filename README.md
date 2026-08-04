@@ -69,6 +69,19 @@ from your local copy and the app draws its own instead.
 slider, and the size you pick is the size you get at every zoom level, so you are
 never rescaling things just because you zoomed. There is a reset next to them.
 
+The controls sit on the map itself, as a small rail down the top left: search,
+display, icon types, markers. One panel opens at a time, so it never grows into a
+wall of buttons. Search sits above it and highlights matching places and icons while
+dimming everything else, and it finds a place even when you are zoomed out past the
+point where its label would normally show. If you would rather have the map clear,
+unpin search and it tucks into the rail with the rest.
+
+Icons can be filtered by type. 119 of them have real names (Bank, Fishing spot,
+Altar) and cover about 88% of the icons on the map; the rest are sprites the wiki
+never catalogued, so they collapse into one row you can turn off wholesale. Hover
+tooltips name the icon under your cursor, since an icon is the one thing on the map
+that does not say what it is.
+
 The placements are found by scanning your own downloaded tiles for the icons,
 which is why they are current. The only placement list the wiki publishes is from
 2019 and has nothing in Varlamore at all. Scanning finds 3114 icons where that

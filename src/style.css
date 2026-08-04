@@ -190,8 +190,6 @@ button.undo:hover { color: var(--text); }
 
 .body { display: flex; flex-direction: column; gap: 22px; }
 
-.mapbtns { display: flex; gap: 10px; }
-
 button.linkbtn {
   background: none;
   border: none;
@@ -374,14 +372,6 @@ ol.stops li.visited .stopname { text-decoration: line-through; }
 .wmpin.done .wmpinlabel { color: #8a9a7a; opacity: 0.8; }
 .wmpin.custom .wmpindot { background: #2a2036; border-color: #b79ae0; color: #d9c6f5; }
 .wmpin.custom .wmpinlabel { color: #c9b6e8; }
-
-.wmbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  flex-wrap: wrap;
-}
 
 select.minisel {
   background: #14110c;
@@ -859,29 +849,6 @@ select.minisel {
 
 .sitefoot a:hover { color: var(--text); }
 
-.wmsize {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 11px;
-  color: var(--dim);
-  white-space: nowrap;
-}
-
-.wmsize input[type="range"] {
-  width: 74px;
-  height: 14px;
-  accent-color: var(--go);
-  cursor: pointer;
-  margin: 0;
-}
-
-.wmsizeval {
-  font-variant-numeric: tabular-nums;
-  min-width: 26px;
-  text-align: right;
-}
-
 
 .wmiconcanvas {
   position: absolute;
@@ -890,4 +857,395 @@ select.minisel {
   width: 100%;
   height: 100%;
   pointer-events: none;
+}
+
+.wmlabel.dim { opacity: 0.16; }
+
+.wmlabel.hit {
+  color: var(--go-bright);
+  text-shadow:
+    0 0 4px #000, 0 0 4px #000, 0 1px 2px #000, 1px 0 2px #000,
+    -1px 0 2px #000, 0 -1px 2px #000;
+}
+
+.wmoverlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+  font-size: 12.5px;
+}
+
+.wmoverlay > * { pointer-events: auto; }
+
+.wmoverlay [hidden] { display: none !important; }
+
+.wmcard {
+  background: rgba(20, 18, 14, 0.88);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  backdrop-filter: blur(9px);
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.5);
+}
+
+.wmtopleft {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  max-height: calc(100% - 20px);
+}
+
+.wmleftcol {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+}
+
+.wmrail {
+  display: flex;
+  flex-direction: column;
+  padding: 3px;
+  gap: 2px;
+  flex: none;
+}
+
+.wmbtn {
+  width: 32px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.wmbtn:hover { background: rgba(255, 255, 255, 0.08); }
+
+.wmbtn.on {
+  background: rgba(92, 156, 62, 0.22);
+  color: var(--go-bright);
+}
+
+.wmpane {
+  width: 254px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.wmpanebody {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.wmpanehead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 6px 5px 12px;
+  border-bottom: 1px solid var(--line);
+  position: sticky;
+  top: 0;
+  background: rgba(20, 18, 14, 0.95);
+}
+
+.wmpanehead h3 {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--text);
+}
+
+.wmpanehead .wmbtn { width: 24px; height: 24px; font-size: 15px; }
+
+.wmsect {
+  padding: 9px 12px;
+  border-top: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.wmpanebody > .wmsect:first-of-type { border-top: 0; }
+
+.wmsub {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--dim);
+  margin-bottom: 4px;
+}
+
+.wmrow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 9px;
+  padding: 4px 0;
+}
+
+.wmrow label {
+  font-size: 12.5px;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wmrow input[type="range"] {
+  flex: 1;
+  min-width: 58px;
+  height: 14px;
+  accent-color: var(--go);
+  cursor: pointer;
+  margin: 0;
+}
+
+.wmval {
+  font-size: 11px;
+  color: var(--dim);
+  font-variant-numeric: tabular-nums;
+  min-width: 28px;
+  text-align: right;
+}
+
+.wmrow.marker .wmbtn { width: 22px; height: 22px; color: var(--dim); }
+
+.wmsw {
+  position: relative;
+  width: 32px;
+  height: 18px;
+  border-radius: 9px;
+  background: #3a342a;
+  border: 1px solid var(--line);
+  cursor: pointer;
+  flex: none;
+  padding: 0;
+}
+
+.wmsw::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--dim);
+  transition: left 0.14s, background 0.14s;
+}
+
+.wmsw.on { background: rgba(92, 156, 62, 0.35); border-color: var(--go); }
+.wmsw.on::after { left: 16px; background: var(--go-bright); }
+
+.wmfield {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  height: 30px;
+  padding: 0 4px 0 9px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.wmfield.small { height: 26px; margin-bottom: 7px; }
+
+.wmfield input {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: 0;
+  outline: 0;
+  color: var(--text);
+  font: inherit;
+  font-size: 12.5px;
+}
+
+.wmfield input::placeholder { color: var(--dim); }
+.wmfield input::-webkit-search-cancel-button { filter: invert(0.6); }
+
+.wmmag { color: var(--dim); font-size: 13px; }
+
+.wmcount {
+  color: var(--go-bright);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.wmsearchdock { width: 254px; padding: 5px; }
+.wmsearchdock .wmfield { border-color: transparent; }
+.wmpin-toggle { width: 24px; height: 24px; font-size: 11px; color: var(--dim); }
+.wmpin-toggle.on { color: var(--go-bright); }
+
+.wmresults { max-height: 176px; overflow-y: auto; margin-top: 5px; }
+.wmsearchdock .wmresults { margin: 5px 4px 2px; }
+
+.wmres {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 7px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.wmres:hover { background: rgba(255, 255, 255, 0.06); }
+.wmres.static, .wmres.empty { cursor: default; }
+.wmres.static:hover, .wmres.empty:hover { background: none; }
+.wmres.empty { color: var(--dim); justify-content: center; }
+
+.wmreskind {
+  font-size: 9.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--dim);
+  width: 34px;
+  flex: none;
+}
+
+.wmresname {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wmrescount, .wmchkcount {
+  font-size: 10.5px;
+  color: var(--dim);
+  font-variant-numeric: tabular-nums;
+}
+
+.wmbulk { display: flex; gap: 10px; margin-bottom: 5px; }
+
+.wmtext {
+  background: none;
+  border: 0;
+  color: var(--dim);
+  font: inherit;
+  font-size: 11.5px;
+  cursor: pointer;
+  padding: 2px 0;
+  align-self: flex-start;
+}
+
+.wmtext:hover { color: var(--go-bright); }
+
+.wmadd {
+  margin-top: 9px;
+  background: transparent;
+  border: 1px solid var(--go);
+  border-radius: 6px;
+  color: var(--go-bright);
+  font: inherit;
+  font-size: 12px;
+  height: 28px;
+  cursor: pointer;
+}
+
+.wmadd:hover { background: rgba(92, 156, 62, 0.14); }
+
+.wmscroll { overflow-y: auto; max-height: 190px; min-height: 0; }
+
+.wmscroll::-webkit-scrollbar,
+.wmresults::-webkit-scrollbar,
+.wmpanebody::-webkit-scrollbar { width: 7px; }
+
+.wmscroll::-webkit-scrollbar-thumb,
+.wmresults::-webkit-scrollbar-thumb,
+.wmpanebody::-webkit-scrollbar-thumb { background: #3a342a; border-radius: 4px; }
+
+.wmunlisted { border-top: 1px solid var(--line); margin-top: 6px; padding-top: 5px; }
+
+.wmchk {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 2px;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.wmchk:hover { background: rgba(255, 255, 255, 0.05); }
+
+.wmbox {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  border: 1px solid var(--line);
+  background: #100e0a;
+  flex: none;
+  display: grid;
+  place-items: center;
+  font-size: 9px;
+  color: transparent;
+}
+
+.wmchk.on .wmbox { background: var(--go); border-color: var(--go); color: #0d1408; }
+
+.wmchkname {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wmzoom {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.wmzoom .wmbtn { border-radius: 0; width: 34px; height: 30px; }
+.wmzoom .wmbtn + .wmbtn { border-top: 1px solid var(--line); }
+
+.wmhint {
+  position: absolute;
+  left: 10px;
+  bottom: 10px;
+  padding: 4px 9px;
+  font-size: 11px;
+  color: var(--dim);
+  max-width: calc(100% - 80px);
+}
+
+.wmpicking {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 7px 12px;
+  color: var(--text);
+}
+
+.wmtip {
+  position: absolute;
+  z-index: 4;
+  transform: translate(-50%, calc(-100% - 14px));
+  background: rgba(20, 18, 14, 0.92);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 4px 9px;
+  font-size: 11.5px;
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.55);
 }

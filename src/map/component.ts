@@ -6,8 +6,11 @@ import {
 } from "../worldmap";
 import type { CustomMarker } from "../worldmap";
 import { ensureIcons, ensureLabels, icons, labels, tierForZoom } from "./data";
-import { iconsOn, labelsOn, sizes } from "./prefs";
-import { controls } from "./controls";
+import { iconTypeOn, iconsOn, labelsOn, sizes, tooltipsOn } from "./prefs";
+import { overlay, repaintIconTypes } from "./overlay";
+import type { MapApi } from "./overlay";
+import { search } from "./search";
+import type { SearchResult } from "./search";
 
 export interface MapPoint {
   wx: number;
@@ -44,17 +47,23 @@ interface ViewState {
   inited: boolean;
   minZoom: number;
   picking: boolean;
+  pane: string | null;
+  query: string;
 }
 
 const ICON_BASE_PX = 22;
 const MAX_ZOOM = 2;
+const FLY_ZOOM = 0.75;
 
 const views = new Map<string, ViewState>();
 
 function viewFor(id: string): ViewState {
   let v = views.get(id);
   if (!v) {
-    v = { zoom: 0.03, offX: 0, offY: 0, inited: false, minZoom: 0.02, picking: false };
+    v = {
+      zoom: 0.03, offX: 0, offY: 0, inited: false, minZoom: 0.02,
+      picking: false, pane: null, query: "",
+    };
     views.set(id, v);
   }
   return v;
@@ -67,6 +76,8 @@ export function createMap(opts: MapOptions): HTMLElement {
   const showMarkers = opts.markers !== false;
   const canAddMarker = opts.addMarker !== false;
   if (!canAddMarker) view.picking = false;
+
+  let result: SearchResult | null = search(view.query);
 
   const wrap = document.createElement("div");
   wrap.className = "wmwrap";
@@ -92,6 +103,10 @@ export function createMap(opts: MapOptions): HTMLElement {
   const labelHost = document.createElement("div");
   labelHost.className = "wmlabels";
   olayer.appendChild(labelHost);
+
+  const tip = document.createElement("div");
+  tip.className = "wmtip";
+  tip.hidden = true;
 
   for (const path of opts.paths ?? []) {
     const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
@@ -146,40 +161,74 @@ export function createMap(opts: MapOptions): HTMLElement {
         label: m.label,
         className: "custom",
         title: "Click to remove",
-        onClick: () => {
-          markers = markers.filter((x) => x.id !== m.id);
-          saveMarkers(markers);
-          opts.onChange();
-        },
+        onClick: () => removeMarker(m.id),
       });
     }
+  }
+
+  function removeMarker(id: string): void {
+    markers = markers.filter((x) => x.id !== id);
+    saveMarkers(markers);
+    opts.onChange();
   }
 
   stage.appendChild(layer);
   stage.appendChild(iconCanvas);
   stage.appendChild(olayer);
+  stage.appendChild(tip);
+
+  const api: MapApi = {
+    status: opts.status ?? "Scroll to zoom, drag to pan.",
+    canAddMarker,
+    showMarkers,
+    get picking() {
+      return view.picking;
+    },
+    cancelPicking() {
+      view.picking = false;
+      opts.onChange();
+    },
+    query: () => view.query,
+    setQuery(q) {
+      view.query = q;
+      result = search(q);
+    },
+    results: () => result,
+    redraw: () => apply(),
+    refit() {
+      view.inited = false;
+      fit();
+    },
+    zoomBy(factor) {
+      const r = stage.getBoundingClientRect();
+      if (r.width <= 0) return;
+      zoomAbout(r.width / 2, r.height / 2, factor);
+    },
+    flyTo(wx, wy) {
+      const r = stage.getBoundingClientRect();
+      if (r.width <= 0) return;
+      const p = worldToPx(wx, wy);
+      view.zoom = Math.min(MAX_ZOOM, Math.max(view.minZoom, FLY_ZOOM));
+      view.offX = r.width / 2 - p.x * view.zoom;
+      view.offY = r.height / 2 - p.y * view.zoom;
+      apply();
+    },
+    startPicking() {
+      view.picking = true;
+      opts.onChange();
+    },
+    rerender: opts.onChange,
+    pane: () => view.pane,
+    setPane(name) {
+      view.pane = name;
+    },
+    markers: () => markers,
+    removeMarker,
+  };
+
+  const chrome = overlay(api);
+  stage.appendChild(chrome);
   wrap.appendChild(stage);
-  wrap.appendChild(
-    controls({
-      status: opts.status ?? "Scroll to zoom, drag to pan.",
-      picking: view.picking,
-      canAddMarker: canAddMarker && showMarkers,
-      onChange: opts.onChange,
-      onSizes: () => apply(),
-      onRefit: () => {
-        view.inited = false;
-        fit();
-      },
-      onStartPicking: () => {
-        view.picking = true;
-        opts.onChange();
-      },
-      onCancelPicking: () => {
-        view.picking = false;
-        opts.onChange();
-      },
-    }),
-  );
 
   interface Level { el: HTMLDivElement; tiles: Map<string, HTMLImageElement> }
   const levels = new Map<number, Level>();
@@ -274,15 +323,32 @@ export function createMap(opts: MapOptions): HTMLElement {
       img.onload = () => {
         if (iconPending) return;
         iconPending = true;
-        requestAnimationFrame(() => {
+        setTimeout(() => {
           iconPending = false;
           drawIcons();
-        });
+        }, 0);
       };
       img.src = `/mapicons/${file}`;
       iconImages.set(file, img);
     }
     return img;
+  }
+
+  function visibleIcons(width: number, height: number) {
+    const data = icons();
+    const out: { key: string; sx: number; sy: number; half: number }[] = [];
+    if (!iconsOn() || !data) return out;
+    const size = ICON_BASE_PX * sizes().icon;
+    const half = size / 2;
+    for (const [key, wx, wy] of data.icons) {
+      if (!iconTypeOn(key)) continue;
+      const p = worldToPx(wx, wy);
+      const sx = p.x * view.zoom + view.offX;
+      const sy = p.y * view.zoom + view.offY;
+      if (sx < -half || sy < -half || sx > width + half || sy > height + half) continue;
+      out.push({ key, sx, sy, half });
+    }
+    return out;
   }
 
   function drawIcons() {
@@ -304,19 +370,23 @@ export function createMap(opts: MapOptions): HTMLElement {
 
     ictx.imageSmoothingEnabled = false;
     const size = ICON_BASE_PX * sizes().icon;
-    const half = size / 2;
 
-    for (const [key, wx, wy] of data.icons) {
-      const p = worldToPx(wx, wy);
-      const sx = p.x * view.zoom + view.offX;
-      const sy = p.y * view.zoom + view.offY;
-      if (sx < -half || sy < -half || sx > r.width + half || sy > r.height + half) continue;
+    for (const { key, sx, sy, half } of visibleIcons(r.width, r.height)) {
       const def = data.types[key];
       if (!def) continue;
       const img = iconImage(def.file);
       if (!img.complete || !img.naturalWidth) continue;
+      const matched = !result || result.matchedTypes.has(key);
+      ictx.globalAlpha = matched ? 1 : 0.12;
       ictx.drawImage(img, sx - half, sy - half, size, size);
+      if (result && matched) {
+        ictx.globalAlpha = 1;
+        ictx.strokeStyle = "#7bc455";
+        ictx.lineWidth = 2;
+        ictx.strokeRect(sx - half - 2, sy - half - 2, size + 4, size + 4);
+      }
     }
+    ictx.globalAlpha = 1;
   }
 
   const liveLabels = new Map<string, HTMLElement>();
@@ -342,7 +412,8 @@ export function createMap(opts: MapOptions): HTMLElement {
 
     const need = new Set<string>();
     for (const l of data) {
-      if (l.tier > maxTier) continue;
+      const matched = result !== null && l.name.toLowerCase().includes(result.query);
+      if (!matched && l.tier > maxTier) continue;
       const p = worldToPx(l.wx, l.wy);
       if (p.x < x0 || p.x > x1 || p.y < y0 || p.y > y1) continue;
 
@@ -357,6 +428,8 @@ export function createMap(opts: MapOptions): HTMLElement {
         labelHost.appendChild(el);
         liveLabels.set(l.name, el);
       }
+      el.classList.toggle("hit", matched);
+      el.classList.toggle("dim", result !== null && !matched);
       el.style.transform = `translate(-50%, -50%) scale(${inv})`;
     }
 
@@ -368,7 +441,10 @@ export function createMap(opts: MapOptions): HTMLElement {
   }
 
   ensureLabels(() => apply());
-  ensureIcons(() => apply());
+  ensureIcons(() => {
+    repaintIconTypes(chrome);
+    apply();
+  });
 
   let applied = false;
   function fit() {
@@ -438,20 +514,22 @@ export function createMap(opts: MapOptions): HTMLElement {
     syncLabels();
   }
 
+  function zoomAbout(cx: number, cy: number, factor: number) {
+    const next = Math.min(MAX_ZOOM, Math.max(view.minZoom, view.zoom * factor));
+    const k = next / view.zoom;
+    view.offX = cx - (cx - view.offX) * k;
+    view.offY = cy - (cy - view.offY) * k;
+    view.zoom = next;
+    apply();
+  }
+
   stage.addEventListener(
     "wheel",
     (e) => {
+      if (e.target instanceof Element && e.target.closest(".wmoverlay")) return;
       e.preventDefault();
       const r = stage.getBoundingClientRect();
-      const cx = e.clientX - r.left;
-      const cy = e.clientY - r.top;
-      const factor = e.deltaY < 0 ? 1.15 : 1 / 1.15;
-      const next = Math.min(MAX_ZOOM, Math.max(view.minZoom, view.zoom * factor));
-      const k = next / view.zoom;
-      view.offX = cx - (cx - view.offX) * k;
-      view.offY = cy - (cy - view.offY) * k;
-      view.zoom = next;
-      apply();
+      zoomAbout(e.clientX - r.left, e.clientY - r.top, e.deltaY < 0 ? 1.15 : 1 / 1.15);
     },
     { passive: false },
   );
@@ -462,6 +540,7 @@ export function createMap(opts: MapOptions): HTMLElement {
   let sx = 0;
   let sy = 0;
   stage.addEventListener("pointerdown", (e) => {
+    if (e.target instanceof Element && e.target.closest(".wmoverlay")) return;
     if (e.button !== 0 && e.button !== 2) return;
     dragging = true;
     moved = false;
@@ -471,13 +550,17 @@ export function createMap(opts: MapOptions): HTMLElement {
     stage.setPointerCapture(e.pointerId);
   });
   stage.addEventListener("pointermove", (e) => {
-    if (!dragging) return;
-    const nx = e.clientX - sx;
-    const ny = e.clientY - sy;
-    if (Math.abs(nx - view.offX) + Math.abs(ny - view.offY) > 3) moved = true;
-    view.offX = nx;
-    view.offY = ny;
-    apply();
+    if (dragging) {
+      const nx = e.clientX - sx;
+      const ny = e.clientY - sy;
+      if (Math.abs(nx - view.offX) + Math.abs(ny - view.offY) > 3) moved = true;
+      view.offX = nx;
+      view.offY = ny;
+      tip.hidden = true;
+      apply();
+      return;
+    }
+    showTip(e);
   });
   stage.addEventListener("pointerup", (e) => {
     if (!dragging) return;
@@ -494,7 +577,44 @@ export function createMap(opts: MapOptions): HTMLElement {
     dragging = false;
   });
 
+  stage.addEventListener("pointerleave", () => {
+    tip.hidden = true;
+  });
+
   stage.addEventListener("contextmenu", (e) => e.preventDefault());
+
+  function showTip(e: PointerEvent) {
+    if (!tooltipsOn() || view.picking) {
+      tip.hidden = true;
+      return;
+    }
+    if (e.target instanceof Element && e.target.closest(".wmoverlay")) {
+      tip.hidden = true;
+      return;
+    }
+    const r = stage.getBoundingClientRect();
+    const mx = e.clientX - r.left;
+    const my = e.clientY - r.top;
+    const data = icons();
+    if (!data) {
+      tip.hidden = true;
+      return;
+    }
+    const candidates = visibleIcons(r.width, r.height);
+    let found: { key: string; sx: number; sy: number } | null = null;
+    for (const c of candidates) {
+      if (Math.abs(mx - c.sx) > c.half || Math.abs(my - c.sy) > c.half) continue;
+      found = c;
+    }
+    if (!found) {
+      tip.hidden = true;
+      return;
+    }
+    tip.textContent = data.types[found.key]?.name ?? "Map icon";
+    tip.style.left = `${found.sx}px`;
+    tip.style.top = `${found.sy}px`;
+    tip.hidden = false;
+  }
 
   return wrap;
 }
