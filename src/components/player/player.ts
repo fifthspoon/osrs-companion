@@ -95,7 +95,7 @@ export function render(onChange: () => void): HTMLElement {
   eStatus.className = "player__status";
 
   const eActions = document.createElement("div");
-  eActions.className = "player__row";
+  eActions.className = "player__row player__row--editor";
 
   const eSave = document.createElement("button");
   eSave.type = "button";

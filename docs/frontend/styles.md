@@ -80,6 +80,32 @@ Module prefix, BEM-lite:
 .player__trigger--set      a variant of that element
 ```
 
+**Everything nests under the block**, using `&__` so the whole component is one
+top-level rule:
+
+```scss
+.player {
+  &__trigger {
+    &:hover { }
+    &--set { }
+  }
+}
+```
+
+That compiles to `.player__trigger--set`, byte for byte what writing the
+selectors out flat produces. It buys enforcement rather than output: a selector
+that does not belong to the block cannot be added without being obvious, and the
+component has one visible boundary.
+
+**Do not confuse it with a real descendant wrapper.** `.player { .trigger { } }`
+compiles to `.player .trigger` at two classes, which restarts the specificity
+arms race that `@layer` exists to end. Nesting is for authoring; it must not
+change what lands in the output.
+
+Every selector in a component should be exactly one class. Checked by compiling
+the component and looking for a descendant combinator or a second class in any
+selector.
+
 - Two underscores for an element, two dashes for a variant.
 - **One level of element nesting only.** `.player__level-name`, not
   `.player__level__name`. If you want a third level the component wants
