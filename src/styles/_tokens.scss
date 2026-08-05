@@ -1,8 +1,10 @@
+@use "mixins" as *;
+
 @layer tokens {
   :root {
-    --fs-xs: 0.6875rem;
-    --fs-sm: 0.75rem;
-    --fs-md: 0.8125rem;
+    --ui-scale: 1;
+
+    @include type-scale;
 
     --bg: #14120e;
     --panel: #1e1b15;
@@ -34,5 +36,17 @@
     --fw-bold: 600;
     --opacity-disabled: 0.6;
     --z-popover: 60;
+  }
+
+  :root[data-text="small"] {
+    --ui-scale: 0.875;
+  }
+
+  :root[data-text="large"] {
+    --ui-scale: 1.125;
+  }
+
+  :root[data-text="huge"] {
+    --ui-scale: 1.25;
   }
 }

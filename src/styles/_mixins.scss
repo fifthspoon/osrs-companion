@@ -1,3 +1,9 @@
+@mixin type-scale {
+  --fs-xs: calc(0.6875rem * var(--ui-scale));
+  --fs-sm: calc(0.75rem * var(--ui-scale));
+  --fs-md: calc(0.8125rem * var(--ui-scale));
+}
+
 @mixin button-reset {
   background: none;
   border: none;

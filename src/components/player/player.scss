@@ -2,13 +2,13 @@
 
 @layer components {
   .player {
-    --player-pop-width: 15.25rem;
-    --player-pop-width-wide: 21rem;
-    --player-field-name-width: 1.625rem;
+    --player-pop-width: calc(15.25rem * var(--ui-scale));
+    --player-pop-width-wide: calc(21rem * var(--ui-scale));
+    --player-field-name-width: calc(1.625rem * var(--ui-scale));
 
-    --player-fs-control: 0.78125rem;
-    --player-fs-note: 0.71875rem;
-    --player-fs-micro: 0.65625rem;
+    --player-fs-control: calc(0.78125rem * var(--ui-scale));
+    --player-fs-note: calc(0.71875rem * var(--ui-scale));
+    --player-fs-micro: calc(0.65625rem * var(--ui-scale));
 
     --player-gap: 0.5625rem;
     --player-input-pad-x: 0.5625rem;

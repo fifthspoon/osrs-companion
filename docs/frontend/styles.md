@@ -150,10 +150,77 @@ Do not convert map or canvas dimensions when those get migrated. Tile sizes,
 icon sizes and the world transform are tied to real pixels and are not a
 typographic measure.
 
+## Text size control
+
+The type scale is multiplied by `--ui-scale`, so a small / medium / large
+setting is a single property change. Presets live in `_tokens.scss`:
+
+| Setting | `--ui-scale` |
+|---|---|
+| `data-text="small"` | 0.875 |
+| default | 1 |
+| `data-text="large"` | 1.125 |
+| `data-text="huge"` | 1.25 |
+
+Driven from TypeScript by stamping the root:
+
+```ts
+document.documentElement.setAttribute("data-text", "large");
+```
+
+Measured across all four, with the navbar open:
+
+| | tab | sync | note | chip | popover | nav height |
+|---|---|---|---|---|---|---|
+| small | 11.38 | 10.94 | 10.06 | 9.63 | 214 | 40 |
+| default | 13 | 12.5 | 11.5 | 11 | 244 | 42 |
+| large | 14.63 | 14.06 | 12.94 | 12.38 | 275 | 45 |
+| huge | 16.25 | 15.63 | 14.38 | 13.75 | 305 | 47 |
+
+Text-driven widths scale with it, so popovers grow to fit rather than
+overflowing. Spacing and radii deliberately **do not** scale: this is a text
+size control, not a density control. A `--density` multiplier over the `--s-*`
+scale is the same one-line pattern if that is wanted later.
+
+### Per component, and the trap that makes it work
+
+**Overriding `--ui-scale` on a component does nothing on its own.** Custom
+properties are substituted where they are *declared*, not where they are used,
+so `--fs-md` declared on `:root` has already resolved `--ui-scale` to the root
+value by the time a descendant sees it. Proved it:
+
+```css
+:root  { --k: 2; --size: calc(8px * var(--k)); }
+#inner { --k: 3; }                                    /* still 16px */
+#redeclared { --k: 3; --size: calc(8px * var(--k)); } /* 24px */
+```
+
+That is why the scale lives in the `type-scale` mixin rather than being written
+out once. A component that wants its own size re-emits it:
+
+```scss
+.player {
+  --ui-scale: 1.5;
+  @include type-scale;
+}
+```
+
+Verified: that puts the player control at 19.5px while the tabs beside it stay
+at 13px.
+
+The presets above work without the mixin only because `:root` and
+`:root[data-text="large"]` match the **same element**, so the override is in
+scope when `--fs-*` is substituted. Any *descendant* override needs the mixin.
+
+Component-local deviation tokens must carry the multiplier themselves, as the
+player's do: `calc(0.78125rem * var(--ui-scale))`. They are declared on
+`.player`, so they pick up a local `--ui-scale` automatically.
+
 ## The scale
 
 Set in `_tokens.scss`. The navbar and player use nothing else except the named
-deviations below. The table gives the px equivalent at a 16px root.
+deviations below. Comments in the table are the px equivalent at a 16px root
+and `--ui-scale: 1`.
 
 | Token | Now | = px | Used for |
 |---|---|---|---|
