@@ -1,4 +1,4 @@
-import { createMap } from "./map/component";
+import { createMap } from "./map";
 
 export function render(rerender: () => void): HTMLElement {
   const el = document.createElement("section");

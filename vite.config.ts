@@ -1,3 +1,5 @@
+import { fileURLToPath } from "node:url";
+import { dirname, resolve } from "node:path";
 import { defineConfig } from "vite";
 import type { Plugin } from "vite";
 
@@ -38,6 +40,14 @@ function cacheFetchedData(): Plugin {
 // build on the old one wondering why your change did nothing.
 export default defineConfig({
   plugins: [cacheFetchedData()],
+  css: {
+    preprocessorOptions: {
+      scss: {
+        api: "modern-compiler",
+        loadPaths: [resolve(dirname(fileURLToPath(import.meta.url)), "src/styles")],
+      },
+    },
+  },
   server: {
     port: 5273,
     strictPort: true,

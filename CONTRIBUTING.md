@@ -65,7 +65,8 @@ fetched by script at setup, and they must stay that way. The full reasoning is i
 [ATTRIBUTION.md](ATTRIBUTION.md), which is worth reading before you add any data
 source. A new source means a new section in that file, in the same commit.
 
-`src/fight/` is an original reimplementation from publicly documented mechanics.
+`src/lib/firecapeSim/` and `src/components/firecapeSim/` are an original reimplementation from publicly
+documented mechanics.
 No decompiled code, no game assets, nothing from private server repositories.
 Hold that line if you extend it.
 
@@ -528,44 +529,51 @@ whenever a number looks off:
 
 | Fact | Where | How to check |
 |---|---|---|
-| GE tax rate, cap, exemptions | `src/market/tax.ts` | The wiki `Grand_Exchange` page, Tax section |
+| GE tax rate, cap, exemptions | `src/lib/market/tax.ts` | The wiki `Grand_Exchange` page, Tax section |
 | Map tile version | `scripts/fetch-tiles.mjs` `VERSION` | The curl above |
-| Prices API shape | `src/market/api.ts` | `curl -s https://prices.runescape.wiki/api/v2/osrs/latest` |
-| Tile max native zoom | `src/worldmap.ts` `NATIVE_Z` | z4 should still 404 |
+| Prices API shape | `src/lib/market/api.ts` | `curl -s https://prices.runescape.wiki/api/v2/osrs/latest` |
+| Tile max native zoom | `src/lib/worldmap.ts` `NATIVE_Z` | z4 should still 404 |
 
 ## Architecture
 
 | File | Role |
 | --- | --- |
-| `src/main.ts` | Tabs, the 1 second tick, ready-transition detection |
-| `src/player.ts` | The synced character: WiseOldMan client, persistence. Pure apart from `fetch` |
-| `src/playerfield.ts` | The nav bar character control and its dropdown |
-| `src/tasks.ts` | Task definitions. Edit here to change timers or add tasks |
-| `src/store.ts` | Persistence plus readiness maths (daily boundary, cooldowns) |
-| `src/notify.ts` | Desktop notifications, fire-once-per-cycle logic |
-| `src/ui.ts` | Dailies rendering |
-| `src/routes.ts` | Route definitions. Each stop carries real world coordinates |
-| `src/routeview.ts` | Route tab: next-stop card, map, stop list |
-| `src/mapview.ts` | Map tab: the standalone map, no route on it |
-| `src/worldmap.ts` | Exact world/pixel transform, tile geometry, markers |
-| `src/map/` | The reusable map component. See `docs/map.md` |
-| `src/runstate.ts` | Progress through a single run |
-| `src/market/tax.ts` | GE tax rate, cap and the 48 exempt IDs. Pure |
-| `src/market/api.ts` | Prices API client, six endpoints, TTL caching. Pure |
-| `src/market/flip.ts` | Candidates, gates, position sizing, the rate model. Pure |
-| `src/market/allocate.ts` | GE slot allocator, three strategies, best wins. Pure |
-| `src/market/fmt.ts` | gp, count, age and duration formatting. Pure |
-| `src/market/settings.ts` | Market settings, defaults, persistence, the `:ge:v1` migration |
-| `src/market/view.ts` | Market tab shell: mode toggle, gates panel, refresh timer |
-| `src/market/basic.ts` | Basic view: the slot plan |
-| `src/market/advanced.ts` | Advanced view: table, column picker, row expand |
-| `src/fightview.ts` | Fight tab: owns the rAF loop and its teardown |
-| `src/fight/engine/` | The tick sim. `sim.ts` is `step(state, inputs)`, pure |
-| `src/fight/` | Renderer, input, guide and loadout panels |
-| `scripts/fetch-tiles.mjs` | Pulls the tile pyramid. Resumable |
-| `scripts/fetch-labels.mjs` | Builds `public/labels.json` from the wiki API |
-| `scripts/fetch-icons.mjs` | Scans the tiles for icon sprites, builds `public/mapicons.json` |
-| `scripts/clean-tiles.mjs` | Erases the baked icons into `public/tiles-clean/`, leaves originals |
+| `src/main.ts` | App shell: the 1 second tick, tab routing, ready-transition detection |
+| **`src/components/`** | |
+| `navbar/navbar.ts` | The tab bar. `create(onSelect, onPlayerChange)` returns `{ el, setActive }` |
+| `player/player.ts` | The character control and its dropdown |
+| `dailies/dailies.ts` | Dailies rendering |
+| `route/route.ts` | Route tab: next-stop card, map, stop list |
+| `map/map.ts` | The reusable map component. See `docs/map.md` |
+| `map/mapTab.ts` | Map tab: the standalone map, no route on it |
+| `map/overlay.ts` `prefs.ts` `search.ts` | Map control rail, preferences, search |
+| `market/market.ts` | Market tab shell: mode toggle, gates panel, refresh timer |
+| `market/basic.ts` `advanced.ts` | The slot plan, and the sortable table |
+| `firecapeSim/firecapeSim.ts` | Fire cape tab: owns the rAF loop and its teardown |
+| `firecapeSim/render.ts` `input.ts` `guide.ts` `settings.ts` | Renderer, input, guide and loadout panels |
+| **`src/data/`** | |
+| `characterData.ts` | The character roster: WiseOldMan client, persistence |
+| `tasks.ts` | Task definitions. Edit here to change timers or add tasks |
+| `taskState.ts` | Task persistence plus readiness maths (daily boundary, cooldowns) |
+| `routes.ts` | Route definitions. Each stop carries real world coordinates |
+| `routeProgress.ts` | Progress through a single run |
+| `mapData.ts` | Label and icon data loading, tier assignment |
+| **`src/lib/`** | |
+| `worldmap.ts` | Exact world/pixel transform, tile geometry, markers |
+| `notify.ts` | Desktop notifications, fire-once-per-cycle logic |
+| `market/tax.ts` | GE tax rate, cap and the 48 exempt IDs. Pure |
+| `market/api.ts` | Prices API client, six endpoints, TTL caching. Pure |
+| `market/flip.ts` | Candidates, gates, position sizing, the rate model. Pure |
+| `market/allocate.ts` | GE slot allocator, three strategies, best wins. Pure |
+| `market/fmt.ts` | gp, count, age and duration formatting. Pure |
+| `market/settings.ts` | Market settings, defaults, persistence, the `:ge:v1` migration |
+| `firecapeSim/` | The tick sim. `sim.ts` is `step(state, inputs)`, pure. Plus scenarios and presets |
+| **`src/styles/`** | `_layers` `_tokens` `_mixins` `_legacy` `index.scss`. See `docs/frontend/styles.md` |
+| **`scripts/`** | |
+| `fetch-tiles.mjs` | Pulls the tile pyramid. Resumable |
+| `fetch-labels.mjs` | Builds `public/labels.json` from the wiki API |
+| `fetch-icons.mjs` | Scans the tiles for icon sprites, builds `public/mapicons.json` |
+| `clean-tiles.mjs` | Erases the baked icons into `public/tiles-clean/`, leaves originals |
 
 localStorage keys: `osrs-companion:v1` (tasks), `:run:v1`, `:markers:v1`,
 `:labels:v1` (label toggle), `:mapicons:v1` (icon toggle), `:mapsize:v1` (the
@@ -582,7 +590,9 @@ search query are per instance, and those live in memory rather than localStorage
 reads them. Harmless if present in an old browser profile. `:ge:v1` is read once
 to carry a pre-existing bank and freshness setting into `:market:v1`, then ignored.
 
-The `:tab` value `"flips"` is migrated to `"market"` on load.
+The `:tab` values `"flips"` and `"fight"` are migrated to `"market"` and
+`"firecape"` on load, and written straight back, so a profile passes through the
+migration once and both lines can then be dropped.
 
 ## The synced character
 
@@ -592,7 +602,7 @@ fetch dies with `TypeError: Failed to fetch`. There is no header to relax and no
 key to obtain. Using it would mean running a server, which this project
 deliberately does not do.
 
-**WiseOldMan works from the browser**, which is why `src/player.ts` uses it.
+**WiseOldMan works from the browser**, which is why `src/data/characterData.ts` uses it.
 `api.wiseoldman.net/v2/players/{name}` answers 200 with CORS open. Do not
 conclude from a `curl` 403 that it is unusable: `curl` gets a Cloudflare bot
 challenge and real Chrome does not. Check from the page, not from the terminal.
@@ -819,30 +829,30 @@ their maths, which covers the parts where being wrong actually costs something.
 Run the ones touching what you changed:
 
 **The `?t=` cache-buster below is a trap for anything that reads module state.**
-`import('/src/map/data.ts?t=1')` is a *different module instance* from
-`/src/map/data.ts`, with its own empty caches. Worse, Vite's HMR appends its own
+`import('/src/data/mapData.ts?t=1')` is a *different module instance* from
+`/src/data/mapData.ts`, with its own empty caches. Worse, Vite's HMR appends its own
 timestamp to internal imports after an edit, so a module you imported by plain path
 may not be the one your other imports are talking to. Priming one and reading the
 other reports zero results over data that loaded perfectly.
 
 It is harmless for pure functions like `worldToPx` and `geTax`, which is why it went
-unnoticed. For `src/map/data.ts` and anything else with a module-level cache, ask the
+unnoticed. For `src/data/mapData.ts` and anything else with a module-level cache, ask the
 dev server which URL is really in the graph:
 
 ```js
-const src = await (await fetch('/src/map/search.ts')).text();
+const src = await (await fetch('/src/components/map/search.ts')).text();
 const dataUrl = src.match(/from\s+"([^"]*\/data\.ts[^"]*)"/)[1];
-const d = await import(dataUrl);        // "/src/map/data.ts?t=1785863280286"
+const d = await import(dataUrl);        // "/src/data/mapData.ts?t=1785863280286"
 await new Promise((r) => d.ensureLabels(r));
 ```
 
 ```js
 // the map transform is exact arithmetic, so it is directly checkable
-const m = await import('/src/worldmap.ts?t=' + Date.now());
+const m = await import('/src/lib/worldmap.ts?t=' + Date.now());
 m.worldToPx(3222, 3218);        // { x: 25776, y: 9072 }  Lumbridge
 
 // GE tax boundaries. Every one of these has bitten a paid competitor
-const g = await import('/src/market/tax.ts?t=' + Date.now());
+const g = await import('/src/lib/market/tax.ts?t=' + Date.now());
 g.geTax(49, 99999);             // 0        rounds down
 g.geTax(50, 99999);             // 1
 g.geTax(250e6, 99999);          // 5000000  the cap, reached exactly here
@@ -851,13 +861,13 @@ g.geTax(8e6, 13190);            // 0        bond is exempt
 g.geTax(3e6, 8007);             // 0        Varrock teleport tab is exempt
 
 // readiness maths
-const s = await import('/src/store.ts?t=' + Date.now());
+const s = await import('/src/data/taskState.ts?t=' + Date.now());
 s.isReady(def, { lastDone: now - 49*60000, enabled: true }, now);  // false
 s.isReady(def, { lastDone: now - 51*60000, enabled: true }, now);  // true
 
 // the fight sim is pure and seeded, so it drives headlessly
-const { createJadScenario } = await import('/src/fight/scenarios/jad.ts');
-const { step } = await import('/src/fight/engine/sim.ts');
+const { createJadScenario } = await import('/src/lib/firecapeSim/scenarios/jad.ts');
+const { step } = await import('/src/lib/firecapeSim/sim.ts');
 let st = createJadScenario(undefined, 2);
 st = step(st, [{ click: { x: 2, y: 16 } }]);   // then assert on st.player.pos
 ```

@@ -1,35 +1,36 @@
-import * as player from "./player";
-import { gp } from "./market/fmt";
+import "./player.scss";
+import * as player from "../../data/characterData";
+import { gp } from "../../lib/market/fmt";
 
 const SUMMARY = ["attack", "strength", "defence", "hitpoints", "ranged", "magic", "prayer", "slayer"];
 
 export function render(onChange: () => void): HTMLElement {
   const box = document.createElement("div");
-  box.className = "playerbox";
+  box.className = "player";
 
   const trigger = document.createElement("button");
   trigger.type = "button";
-  trigger.className = "playertrigger";
+  trigger.className = "player__trigger";
 
   const pop = document.createElement("div");
-  pop.className = "playerpop";
+  pop.className = "player__pop";
   pop.hidden = true;
 
   const main = document.createElement("div");
-  main.className = "playermain";
+  main.className = "player__main";
 
   const roster = document.createElement("ul");
-  roster.className = "playerroster";
+  roster.className = "player__roster";
 
   const stats = document.createElement("div");
-  stats.className = "playerstats";
+  stats.className = "player__stats";
 
   const addRow = document.createElement("div");
-  addRow.className = "playerrow";
+  addRow.className = "player__row";
 
   const input = document.createElement("input");
   input.type = "text";
-  input.className = "playerinput";
+  input.className = "player__input";
   input.placeholder = "RuneScape name";
   input.maxLength = player.MAX_NAME;
   input.spellcheck = false;
@@ -37,13 +38,13 @@ export function render(onChange: () => void): HTMLElement {
 
   const go = document.createElement("button");
   go.type = "button";
-  go.className = "syncbtn";
+  go.className = "player__sync";
   go.textContent = "Sync";
 
   addRow.append(input, go);
 
   const status = document.createElement("p");
-  status.className = "playerstatus";
+  status.className = "player__status";
 
   const manualLink = document.createElement("button");
   manualLink.type = "button";
@@ -53,34 +54,36 @@ export function render(onChange: () => void): HTMLElement {
   main.append(roster, stats, addRow, status, manualLink);
 
   const editor = document.createElement("div");
-  editor.className = "playereditor";
+  editor.className = "player__editor";
   editor.hidden = true;
 
   const eName = document.createElement("input");
   eName.type = "text";
-  eName.className = "playerinput";
+  eName.className = "player__input";
   eName.placeholder = "Character name";
   eName.maxLength = player.MAX_NAME;
   eName.spellcheck = false;
   eName.autocomplete = "off";
 
   const eCombat = document.createElement("p");
-  eCombat.className = "playerhead";
+  eCombat.className = "player__head";
 
   const grid = document.createElement("div");
-  grid.className = "playerskills";
+  grid.className = "player__fields";
 
   const fields = new Map<string, HTMLInputElement>();
   for (const s of player.SKILLS) {
     const label = document.createElement("label");
-    label.className = "skfield";
+    label.className = "player__field";
     const n = document.createElement("span");
+    n.className = "player__field-name";
     n.textContent = s.slice(0, 3);
     n.title = s;
     const f = document.createElement("input");
     f.type = "number";
     f.min = s === "hitpoints" ? "10" : "1";
     f.max = "99";
+    f.className = "player__field-input";
     f.inputMode = "numeric";
     f.addEventListener("input", paintCombat);
     label.append(n, f);
@@ -89,14 +92,14 @@ export function render(onChange: () => void): HTMLElement {
   }
 
   const eStatus = document.createElement("p");
-  eStatus.className = "playerstatus";
+  eStatus.className = "player__status";
 
   const eActions = document.createElement("div");
-  eActions.className = "playerrow";
+  eActions.className = "player__row";
 
   const eSave = document.createElement("button");
   eSave.type = "button";
-  eSave.className = "syncbtn";
+  eSave.className = "player__sync";
   eSave.textContent = "Save character";
 
   const eCancel = document.createElement("button");
@@ -131,7 +134,7 @@ export function render(onChange: () => void): HTMLElement {
 
   function paint() {
     const active = player.get();
-    trigger.classList.toggle("set", !!active);
+    trigger.classList.toggle("player__trigger--set", !!active);
     trigger.textContent = active ? active.displayName : "Sync character";
     trigger.title = active
       ? `${active.displayName}, ${active.manual ? "entered by hand" : "synced"} ${new Date(active.syncedAt).toLocaleString()}`
@@ -141,16 +144,17 @@ export function render(onChange: () => void): HTMLElement {
     const all = player.list();
     for (const c of all) {
       const li = document.createElement("li");
-      if (c.id === active?.id) li.classList.add("on");
+      li.className = "player__entry";
+      if (c.id === active?.id) li.classList.add("player__entry--active");
 
       const pick = document.createElement("button");
       pick.type = "button";
-      pick.className = "pickbtn";
+      pick.className = "player__pick";
       const nm = document.createElement("span");
-      nm.className = "nm";
+      nm.className = "player__name";
       nm.textContent = c.displayName;
       const meta = document.createElement("span");
-      meta.className = "meta";
+      meta.className = "player__meta";
       meta.textContent = c.combatLevel !== null ? `cb ${c.combatLevel}` : "";
       pick.append(nm, meta);
       pick.addEventListener("click", () => {
@@ -161,7 +165,7 @@ export function render(onChange: () => void): HTMLElement {
 
       const del = document.createElement("button");
       del.type = "button";
-      del.className = "delbtn";
+      del.className = "player__remove";
       del.textContent = "x";
       del.title = `Remove ${c.displayName}`;
       del.addEventListener("click", () => {
@@ -179,7 +183,7 @@ export function render(onChange: () => void): HTMLElement {
     if (!active) return;
 
     const head = document.createElement("p");
-    head.className = "playerhead";
+    head.className = "player__head";
     const bits = [];
     if (active.combatLevel !== null) bits.push(`Combat ${active.combatLevel}`);
     bits.push(`Total ${active.totalLevel}`);
@@ -190,15 +194,17 @@ export function render(onChange: () => void): HTMLElement {
     stats.appendChild(head);
 
     const sg = document.createElement("ul");
-    sg.className = "playergrid";
+    sg.className = "player__levels";
     for (const key of SUMMARY) {
       const s = active.skills[key];
       if (!s) continue;
       const li = document.createElement("li");
+      li.className = "player__level";
       const n = document.createElement("span");
-      n.className = "sk";
+      n.className = "player__level-name";
       n.textContent = key.slice(0, 3);
       const v = document.createElement("b");
+      v.className = "player__level-value";
       v.textContent = String(s.level);
       li.append(n, v);
       sg.appendChild(li);
@@ -218,11 +224,11 @@ export function render(onChange: () => void): HTMLElement {
     eName.value = from ? from.displayName.slice(0, player.MAX_NAME) : player.normalise(input.value);
     for (const s of player.SKILLS) fields.get(s)!.value = String(levels[s]);
     eStatus.textContent = "";
-    eStatus.classList.remove("err");
+    eStatus.classList.remove("player__status--error");
     paintCombat();
     main.hidden = true;
     editor.hidden = false;
-    pop.classList.add("wide");
+    pop.classList.add("player__pop--wide");
     eName.focus();
     eName.select();
   }
@@ -230,7 +236,7 @@ export function render(onChange: () => void): HTMLElement {
   function closeEditor() {
     editor.hidden = true;
     main.hidden = false;
-    pop.classList.remove("wide");
+    pop.classList.remove("player__pop--wide");
   }
 
   function open() {
@@ -239,7 +245,7 @@ export function render(onChange: () => void): HTMLElement {
     closeEditor();
     input.value = "";
     status.textContent = "";
-    status.classList.remove("err");
+    status.classList.remove("player__status--error");
     paint();
     input.focus();
   }
@@ -248,7 +254,7 @@ export function render(onChange: () => void): HTMLElement {
     pop.hidden = true;
     closeEditor();
     status.textContent = "";
-    status.classList.remove("err");
+    status.classList.remove("player__status--error");
   }
 
   async function doSync() {
@@ -262,7 +268,7 @@ export function render(onChange: () => void): HTMLElement {
     busy = true;
     go.disabled = true;
     input.disabled = true;
-    status.classList.remove("err");
+    status.classList.remove("player__status--error");
     status.textContent = "Syncing...";
     try {
       await player.sync(name);
@@ -272,13 +278,13 @@ export function render(onChange: () => void): HTMLElement {
       close();
       onChange();
     } catch (e) {
-      status.classList.add("err");
+      status.classList.add("player__status--error");
       status.textContent = e instanceof Error ? e.message : "Sync failed.";
     } finally {
       busy = false;
       go.disabled = false;
       input.disabled = false;
-      if (status.classList.contains("err")) {
+      if (status.classList.contains("player__status--error")) {
         input.focus();
         input.select();
       }
@@ -305,7 +311,7 @@ export function render(onChange: () => void): HTMLElement {
       close();
       onChange();
     } catch (e) {
-      eStatus.classList.add("err");
+      eStatus.classList.add("player__status--error");
       eStatus.textContent = e instanceof Error ? e.message : "Could not save.";
       eName.focus();
     }

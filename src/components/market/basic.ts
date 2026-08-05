@@ -1,8 +1,8 @@
-import { allocate } from "./allocate";
-import type { Allocation, Slot, UnusedReason } from "./allocate";
-import type { Candidate } from "./flip";
-import type { Settings } from "./settings";
-import { gp, count, duration } from "./fmt";
+import { allocate } from "../../lib/market/allocate";
+import type { Allocation, Slot, UnusedReason } from "../../lib/market/allocate";
+import type { Candidate } from "../../lib/market/flip";
+import type { Settings } from "../../lib/market/settings";
+import { gp, count, duration } from "../../lib/market/fmt";
 
 export function renderBasic(
   candidates: Candidate[],

@@ -1,0 +1,30 @@
+@use "mixins" as *;
+
+@layer components {
+  .navbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--s-sm);
+    border-bottom: var(--hairline) solid var(--line);
+    padding-bottom: var(--s-lg);
+  }
+
+  .navbar__tab {
+    @include button-reset;
+    color: var(--dim);
+    font-size: var(--fs-md);
+    padding: var(--s-sm) var(--s-xl);
+    border-radius: var(--r-md);
+
+    &:hover {
+      color: var(--text);
+    }
+
+    &--active {
+      background: var(--panel);
+      color: var(--text);
+      border: var(--hairline) solid var(--line);
+    }
+  }
+}

@@ -67,7 +67,7 @@ checked against what the wiki actually rendered.
 
 ### Live item prices
 
-Requested by `src/market/api.ts` from `prices.runescape.wiki/api/v2/osrs`,
+Requested by `src/lib/market/api.ts` from `prices.runescape.wiki/api/v2/osrs`,
 directly from your browser, at the moment you open the Market tab.
 
 Nothing is written to disk and nothing is committed. The responses are cached in
@@ -78,7 +78,7 @@ that third party tools can call it.
 
 ### Your character's levels
 
-Requested by `src/player.ts` from `api.wiseoldman.net/v2`, directly from your
+Requested by `src/data/characterData.ts` from `api.wiseoldman.net/v2`, directly from your
 browser, only when you press **Sync character** and only for the name you typed.
 
 [WiseOldMan](https://wiseoldman.net) is a free, open source OSRS tracker that
@@ -100,7 +100,8 @@ Characters entered by hand never touch the network at all.
 
 ### Fight Caves simulation
 
-`src/fight/` is an original reimplementation. Every mechanic in it came from
+`src/lib/firecapeSim/` and `src/components/firecapeSim/` are an original
+reimplementation. Every mechanic in them came from
 reading public documented facts on the OSRS Wiki (Fight_Caves,
 Fight_Caves/Strategies, Inferno, and individual monster pages) and writing code
 from scratch.

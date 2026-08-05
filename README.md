@@ -169,9 +169,9 @@ Defaults:
 | NMZ herb boxes | daily | no |
 | Farming contract | daily | no |
 
-Values marked APPROX in `src/tasks.ts` are wiki or community recommended
+Values marked APPROX in `src/data/tasks.ts` are wiki or community recommended
 figures that vary a little in game (tree types differ, Hespori is 22 to 32 hours
-depending on plant time). **Edit them in `src/tasks.ts` if yours feel off.** A
+depending on plant time). **Edit them in `src/data/tasks.ts` if yours feel off.** A
 number you trust beats a number I guessed at.
 
 ## Notifications
@@ -184,17 +184,17 @@ being a local page with no install and no background service.
 
 ## Layout
 
-- `src/tasks.ts` task definitions. Edit here to change timers or add tasks.
-- `src/store.ts` persistence and readiness logic (daily reset boundary,
+- `src/data/tasks.ts` task definitions. Edit here to change timers or add tasks.
+- `src/data/taskState.ts` persistence and readiness logic (daily reset boundary,
   cooldown maths).
-- `src/notify.ts` desktop notifications, including the fire-once-per-cycle
+- `src/lib/notify.ts` desktop notifications, including the fire-once-per-cycle
   logic so it doesn't nag.
-- `src/ui.ts` rendering.
+- `src/components/dailies/dailies.ts` rendering.
 - `src/main.ts` the 1 second tick loop and ready-transition detection.
-- `src/routes.ts` run routes. Each stop carries its real world coordinates.
-- `src/worldmap.ts` the world-to-pixel transform and tile geometry.
+- `src/data/routes.ts` run routes. Each stop carries its real world coordinates.
+- `src/lib/worldmap.ts` the world-to-pixel transform and tile geometry.
 - `src/map/` the reusable map component: pan, zoom, pins, labels, markers.
-- `src/mapview.ts` the standalone Map tab.
+- `src/components/map/mapTab.ts` the standalone Map tab.
 - `src/market/` the Market tab: prices API, tax, gates, sizing, slot allocator.
 - `scripts/fetch-tiles.mjs` pulls the map tiles.
 - `scripts/fetch-labels.mjs` rebuilds `public/labels.json` from the wiki.

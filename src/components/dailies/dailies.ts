@@ -1,8 +1,8 @@
-import { TASKS } from "./tasks";
-import type { TaskDef } from "./tasks";
-import type { Store } from "./store";
-import { msUntilReady, isReady, nextDailyReset, MINUTE } from "./store";
-import { permission, shouldNotifyFor } from "./notify";
+import { TASKS } from "../../data/tasks";
+import type { TaskDef } from "../../data/tasks";
+import type { Store } from "../../data/taskState";
+import { msUntilReady, isReady, nextDailyReset, MINUTE } from "../../data/taskState";
+import { permission, shouldNotifyFor } from "../../lib/notify";
 
 function fmt(ms: number): string {
   const total = Math.ceil(ms / 1000);

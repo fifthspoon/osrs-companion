@@ -93,7 +93,7 @@ flip sites still use 1%, which overstates every margin and overstates it worst o
 - 2% of the sale price, **rounded down**. Anything under 50 gp is therefore untaxed by arithmetic
   rather than by rule.
 - Capped at 5,000,000 gp, which is reached exactly at a 250m sale price.
-- 48 items are exempt, listed in `EXEMPT_IDS` in `src/market/tax.ts`.
+- 48 items are exempt, listed in `EXEMPT_IDS` in `src/lib/market/tax.ts`.
 
 The exempt list is mostly cheap early game things where the tax would round away to nothing anyway,
 which makes it easy to dismiss as decoration. It is not. **Old school bond (13190) is on it and is
@@ -257,15 +257,15 @@ genuinely is not more worth buying, and saying so is more useful than inventing 
 
 | File | Role |
 | --- | --- |
-| `src/market/tax.ts` | Rate, cap, exempt list, `geTax`. Pure |
-| `src/market/api.ts` | All six endpoints, TTL caching, the `Market` snapshot type |
-| `src/market/flip.ts` | Candidates, gates, sizing, the rate model. Pure |
-| `src/market/allocate.ts` | The slot allocator and its three strategies. Pure |
-| `src/market/fmt.ts` | gp, count, age and duration formatting. Pure |
-| `src/market/settings.ts` | The settings object, its defaults, persistence and the migration |
-| `src/market/view.ts` | Tab shell, mode toggle, gates panel, the 60 second refresh |
-| `src/market/basic.ts` | The allocator view |
-| `src/market/advanced.ts` | Table, column picker, filters, row expand |
+| `src/lib/market/tax.ts` | Rate, cap, exempt list, `geTax`. Pure |
+| `src/lib/market/api.ts` | All six endpoints, TTL caching, the `Market` snapshot type |
+| `src/lib/market/flip.ts` | Candidates, gates, sizing, the rate model. Pure |
+| `src/lib/market/allocate.ts` | The slot allocator and its three strategies. Pure |
+| `src/lib/market/fmt.ts` | gp, count, age and duration formatting. Pure |
+| `src/lib/market/settings.ts` | The settings object, its defaults, persistence and the migration |
+| `src/components/market/market.ts` | Tab shell, mode toggle, gates panel, the 60 second refresh |
+| `src/components/market/basic.ts` | The allocator view |
+| `src/components/market/advanced.ts` | Table, column picker, filters, row expand |
 
 Everything except the last three is pure and has no DOM access, which is what makes it checkable
 from the console.
@@ -298,7 +298,7 @@ Deleting the cache keys costs one extra round of fetches and nothing else.
 There is no test suite. The pure modules import cleanly in the browser console.
 
 ```js
-const t = await import('/src/market/tax.ts?t=' + Date.now());
+const t = await import('/src/lib/market/tax.ts?t=' + Date.now());
 t.geTax(49, 99999);          // 0, rounds down
 t.geTax(50, 99999);          // 1
 t.geTax(250e6, 99999);       // 5000000, the cap, reached exactly here

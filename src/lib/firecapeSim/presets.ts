@@ -1,4 +1,4 @@
-import type { Loadout } from "../engine/loadout";
+import type { Loadout } from "./loadout";
 
 export interface GearTier {
   wealth: string;

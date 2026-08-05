@@ -1,14 +1,14 @@
-import { fetchMarket } from "./api";
-import type { Market } from "./api";
-import { buildCandidates } from "./flip";
-import type { Candidate } from "./flip";
-import { TAX_HINT } from "./tax";
-import { SLOTS_F2P, SLOTS_MEMBERS } from "./allocate";
-import { s, save, resetTuning } from "./settings";
-import type { Mode } from "./settings";
+import { fetchMarket } from "../../lib/market/api";
+import type { Market } from "../../lib/market/api";
+import { buildCandidates } from "../../lib/market/flip";
+import type { Candidate } from "../../lib/market/flip";
+import { TAX_HINT } from "../../lib/market/tax";
+import { SLOTS_F2P, SLOTS_MEMBERS } from "../../lib/market/allocate";
+import { s, save, resetTuning } from "../../lib/market/settings";
+import type { Mode } from "../../lib/market/settings";
 import { renderBasic } from "./basic";
 import { renderAdvanced } from "./advanced";
-import { gp, parseGp, age } from "./fmt";
+import { gp, parseGp, age } from "../../lib/market/fmt";
 
 const REFRESH_MS = 60_000;
 

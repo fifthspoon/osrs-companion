@@ -1,7 +1,7 @@
-import type { RouteDef } from "./routes";
-import { createMap } from "./map/component";
-import type { MapPin } from "./map/component";
-import * as run from "./runstate";
+import type { RouteDef } from "../../data/routes";
+import { createMap } from "../map/map";
+import type { MapPin } from "../map/map";
+import * as run from "../../data/routeProgress";
 
 export function render(route: RouteDef, rerender: () => void): HTMLElement {
   const el = document.createElement("section");

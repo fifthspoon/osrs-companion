@@ -1,6 +1,6 @@
-import type { GameState, Vec, Overhead, AttackStyle } from "./engine/types";
-import { ARENA, CANVAS_W, CANVAS_H, TILE, GRID_W, GRID_H, MELEE_RANGE } from "./engine/constants";
-import { tileCenter, distToBlock } from "./engine/grid";
+import type { GameState, Vec, Overhead, AttackStyle } from "../../lib/firecapeSim/types";
+import { ARENA, CANVAS_W, CANVAS_H, TILE, GRID_W, GRID_H, MELEE_RANGE } from "../../lib/firecapeSim/constants";
+import { tileCenter, distToBlock } from "../../lib/firecapeSim/grid";
 
 const STYLE_COLOR: Record<AttackStyle, string> = {
   magic: "#6ab0ff",

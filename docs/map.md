@@ -2,7 +2,7 @@
 
 The source files under `src/map/` carry no comments. Everything that explains them is here.
 
-`src/worldmap.ts` is unchanged and stays where it is. It owns the exact world-to-pixel transform and
+`src/lib/worldmap.ts` is unchanged and stays where it is. It owns the exact world-to-pixel transform and
 the tile geometry, it is pure, and it has no DOM in it. Read the map section of `CONTRIBUTING.md`
 before touching that file. This document is only about the view layer that sits on top of it.
 
@@ -23,11 +23,11 @@ So the file is now `src/map/`, split four ways, and the route is just one caller
 
 | File | Owns |
 | --- | --- |
-| `src/map/component.ts` | `createMap(opts)`, the stage, tiles, pins, the icon canvas, labels, pan and zoom |
-| `src/map/overlay.ts` | All chrome: the rail, the panes, search, zoom, the hint, the picking banner |
-| `src/map/search.ts` | Matching a query against place names and icon type names. Pure |
-| `src/map/data.ts` | Fetching and caching `labels.json` and `mapicons.json`, label ranking, icon type counts |
-| `src/map/prefs.ts` | Every persisted preference |
+| `src/components/map/map.ts` | `createMap(opts)`, the stage, tiles, pins, the icon canvas, labels, pan and zoom |
+| `src/components/map/overlay.ts` | All chrome: the rail, the panes, search, zoom, the hint, the picking banner |
+| `src/components/map/search.ts` | Matching a query against place names and icon type names. Pure |
+| `src/data/mapData.ts` | Fetching and caching `labels.json` and `mapicons.json`, label ranking, icon type counts |
+| `src/components/map/prefs.ts` | Every persisted preference |
 
 ## The component contract
 
@@ -101,7 +101,7 @@ every waiter and drain the queue when the fetch settles, and call back immediate
 
 The controls used to be a `.wmbar` strip under the stage: eight buttons, three sliders and a status
 line all on one row, wrapping onto two rows on a narrow window. It grew that way one control at a
-time. Everything now lives on the map itself, in `src/map/overlay.ts`.
+time. Everything now lives on the map itself, in `src/components/map/overlay.ts`.
 
 The shape is a four-button rail down the top left, and **one pane at a time** beside it. Opening a
 pane closes whatever was open. That is the point of the design rather than an implementation detail:
@@ -183,7 +183,7 @@ that does.
 
 ## The standalone Map tab
 
-`src/mapview.ts` is the whole thing: `createMap` with an id and a status line and nothing else, which
+`src/components/map/mapTab.ts` is the whole thing: `createMap` with an id and a status line and nothing else, which
 is the proof that the component API is actually general. A second context cost fifteen lines and no
 new options.
 

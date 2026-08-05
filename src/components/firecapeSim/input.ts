@@ -1,5 +1,5 @@
-import type { PlayerInput } from "./engine/types";
-import { pxToTile } from "./engine/grid";
+import type { PlayerInput } from "../../lib/firecapeSim/types";
+import { pxToTile } from "../../lib/firecapeSim/grid";
 
 export class InputBuffer {
   private pending: PlayerInput[] = [];

@@ -1,0 +1,64 @@
+@mixin button-reset {
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+@mixin button-control {
+  @include button-reset;
+  font-family: inherit;
+  border-radius: var(--r-md);
+}
+
+@mixin field {
+  background: var(--bg);
+  border: var(--hairline) solid var(--line);
+  color: var(--text);
+  font-family: inherit;
+  border-radius: var(--r-md);
+
+  &::placeholder {
+    color: var(--dim);
+  }
+
+  &:focus {
+    outline: none;
+    border-color: var(--go);
+  }
+
+  &:disabled {
+    opacity: var(--opacity-disabled);
+  }
+}
+
+@mixin panel {
+  background: var(--panel);
+  border: var(--hairline) solid var(--line);
+  border-radius: var(--r-lg);
+}
+
+@mixin stack($gap) {
+  display: flex;
+  flex-direction: column;
+  gap: $gap;
+}
+
+@mixin row($gap) {
+  display: flex;
+  align-items: center;
+  gap: $gap;
+}
+
+@mixin truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@mixin no-spinner {
+  &::-webkit-outer-spin-button,
+  &::-webkit-inner-spin-button {
+    appearance: none;
+    margin: 0;
+  }
+}

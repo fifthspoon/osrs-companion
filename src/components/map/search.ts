@@ -1,4 +1,4 @@
-import { labels, namedIconTypes } from "./data";
+import { labels, namedIconTypes } from "../../data/mapData";
 
 export interface PlaceHit {
   name: string;

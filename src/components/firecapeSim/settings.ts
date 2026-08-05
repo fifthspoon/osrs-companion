@@ -1,13 +1,13 @@
-import type { Loadout, RangedPrayer, RangedStyle, VoidRanged } from "./engine/loadout";
-import { maxHit, hitChance } from "./engine/loadout";
+import type { Loadout, RangedPrayer, RangedStyle, VoidRanged } from "../../lib/firecapeSim/loadout";
+import { maxHit, hitChance } from "../../lib/firecapeSim/loadout";
 import {
   JAD_DEFENCE_LEVEL,
   JAD_RANGED_DEF_BONUS,
   REACTION_PRESETS,
   DEFAULT_REACTION,
-} from "./engine/constants";
-import type { ReactionPreset } from "./engine/constants";
-import { GEAR_TIERS } from "./data/presets";
+} from "../../lib/firecapeSim/constants";
+import type { ReactionPreset } from "../../lib/firecapeSim/constants";
+import { GEAR_TIERS } from "../../lib/firecapeSim/presets";
 
 export function createSettingsPanel(
   initial: Loadout,

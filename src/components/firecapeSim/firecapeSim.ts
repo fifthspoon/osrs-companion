@@ -1,12 +1,12 @@
-import { TICK_MS, CANVAS_W, CANVAS_H } from "./fight/engine/constants";
-import { createJadScenario } from "./fight/scenarios/jad";
-import { step } from "./fight/engine/sim";
-import { InputBuffer } from "./fight/input";
-import { Renderer } from "./fight/render";
-import { createSettingsPanel } from "./fight/settings";
-import { createGuidePanel } from "./fight/guide";
-import { DEFAULT_LOADOUT } from "./fight/engine/loadout";
-import type { Loadout } from "./fight/engine/loadout";
+import { TICK_MS, CANVAS_W, CANVAS_H } from "../../lib/firecapeSim/constants";
+import { createJadScenario } from "../../lib/firecapeSim/scenarios/jad";
+import { step } from "../../lib/firecapeSim/sim";
+import { InputBuffer } from "./input";
+import { Renderer } from "./render";
+import { createSettingsPanel } from "./settings";
+import { createGuidePanel } from "./guide";
+import { DEFAULT_LOADOUT } from "../../lib/firecapeSim/loadout";
+import type { Loadout } from "../../lib/firecapeSim/loadout";
 
 let loadout: Loadout = { ...DEFAULT_LOADOUT };
 let reactionTicks = 2;

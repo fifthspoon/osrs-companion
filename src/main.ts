@@ -1,22 +1,25 @@
-import "./style.css";
-import { TASKS } from "./tasks";
-import { load, save, isReady } from "./store";
-import type { Store } from "./store";
-import { render as renderDailies } from "./ui";
-import { render as renderRoute } from "./routeview";
-import { render as renderMap } from "./mapview";
-import { ROUTES } from "./routes";
-import * as fightview from "./fightview";
-import * as market from "./market/view";
-import * as playerfield from "./playerfield";
-import { requestPermission, fire, clear } from "./notify";
+import "./styles/index.scss";
+import { TASKS } from "./data/tasks";
+import { load, save, isReady } from "./data/taskState";
+import type { Store } from "./data/taskState";
+import { render as renderDailies } from "./components/dailies/dailies";
+import { render as renderRoute } from "./components/route/route";
+import { render as renderMap } from "./components/map/mapTab";
+import { ROUTES } from "./data/routes";
+import * as firecapeSim from "./components/firecapeSim/firecapeSim";
+import * as market from "./components/market/market";
+import * as navbar from "./components/navbar/navbar";
+import { requestPermission, fire, clear } from "./lib/notify";
 
 const root = document.getElementById("app") as HTMLElement;
 let store: Store = load();
 
-type Tab = "dailies" | string; // string = a route id
-let tab: Tab = (localStorage.getItem("osrs-companion:tab") as Tab) || "dailies";
+type Tab = "dailies" | string;
+const savedTab = localStorage.getItem("osrs-companion:tab") ?? "dailies";
+let tab: Tab = savedTab;
 if (tab === "flips") tab = "market";
+if (tab === "fight") tab = "firecape";
+if (tab !== savedTab) localStorage.setItem("osrs-companion:tab", tab);
 
 const wasReady = new Map<string, boolean>();
 for (const t of TASKS) {
@@ -56,36 +59,9 @@ function setTab(next: Tab) {
   draw();
 }
 
-function tabBar(): [HTMLElement, Map<Tab, HTMLButtonElement>] {
-  const bar = document.createElement("nav");
-  bar.className = "tabs";
-  bar.appendChild(playerfield.render(draw));
-
-  const buttons = new Map<Tab, HTMLButtonElement>();
-  const items: [Tab, string][] = [
-    ["dailies", "Dailies"],
-    ...ROUTES.map((r) => [r.id, r.name] as [Tab, string]),
-    ["map", "Map"],
-    ["market", "Market"],
-    ["fight", "Fire cape (WIP)"],
-  ];
-  for (const [id, label] of items) {
-    const b = document.createElement("button");
-    b.textContent = label;
-    b.addEventListener("click", () => setTab(id));
-    bar.appendChild(b);
-    buttons.set(id, b);
-  }
-  return [bar, buttons];
-}
-
-const [nav, tabButtons] = tabBar();
+const nav = navbar.create(setTab, draw);
 const body = document.createElement("div");
 body.className = "body";
-
-function syncTabs() {
-  for (const [id, b] of tabButtons) b.classList.toggle("active", id === tab);
-}
 
 function footer(): HTMLElement {
   const f = document.createElement("footer");
@@ -114,10 +90,10 @@ function footer(): HTMLElement {
 }
 
 function draw() {
-  fightview.stop();
+  firecapeSim.stop();
   market.stop();
 
-  syncTabs();
+  nav.setActive(tab);
   body.innerHTML = "";
 
   if (tab === "dailies") {
@@ -126,8 +102,8 @@ function draw() {
     body.appendChild(renderMap(draw));
   } else if (tab === "market") {
     body.appendChild(market.render(draw));
-  } else if (tab === "fight") {
-    body.appendChild(fightview.render());
+  } else if (tab === "firecape") {
+    body.appendChild(firecapeSim.render());
   } else {
     const route = ROUTES.find((r) => r.id === tab);
     if (route) body.appendChild(renderRoute(route, draw));
@@ -146,7 +122,7 @@ function tick() {
   if (tab === "dailies") draw();
 }
 
-root.appendChild(nav);
+root.appendChild(nav.el);
 root.appendChild(body);
 root.appendChild(footer());
 

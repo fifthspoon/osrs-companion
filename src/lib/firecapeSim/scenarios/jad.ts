@@ -1,4 +1,4 @@
-import type { GameState } from "../engine/types";
+import type { GameState } from "../types";
 import {
   JAD_HP,
   JAD_SIZE,
@@ -9,9 +9,9 @@ import {
   PLAYER_MAX_PRAYER,
   GRID_W,
   GRID_H,
-} from "../engine/constants";
-import { DEFAULT_LOADOUT, maxHit, hitChance } from "../engine/loadout";
-import type { Loadout } from "../engine/loadout";
+} from "../constants";
+import { DEFAULT_LOADOUT, maxHit, hitChance } from "../loadout";
+import type { Loadout } from "../loadout";
 
 export function createJadScenario(
   loadout: Loadout = DEFAULT_LOADOUT,

@@ -1,0 +1,38 @@
+@layer tokens {
+  :root {
+    --fs-xs: 0.6875rem;
+    --fs-sm: 0.75rem;
+    --fs-md: 0.8125rem;
+
+    --bg: #14120e;
+    --panel: #1e1b15;
+    --line: #332e23;
+    --text: #e8dcc0;
+    --dim: #8a8272;
+    --go: #5c9c3e;
+    --go-bright: #7bc455;
+
+    --warn: #c88a4a;
+    --accent-soft: rgba(92, 156, 62, 0.12);
+    --accent-fill: rgba(92, 156, 62, 0.1);
+    --hover: rgba(255, 255, 255, 0.04);
+    --shadow: 0 0.625rem 1.625rem rgba(0, 0, 0, 0.5);
+
+    --s-3xs: 0.125rem;
+    --s-2xs: 0.1875rem;
+    --s-xs: 0.25rem;
+    --s-sm: 0.375rem;
+    --s-md: 0.5rem;
+    --s-lg: 0.625rem;
+    --s-xl: 0.75rem;
+
+    --r-xs: 0.25rem;
+    --r-md: 0.375rem;
+    --r-lg: 0.5rem;
+
+    --hairline: 1px;
+    --fw-bold: 600;
+    --opacity-disabled: 0.6;
+    --z-popover: 60;
+  }
+}

@@ -1,4 +1,4 @@
-import { GEAR_TIERS } from "./data/presets";
+import { GEAR_TIERS } from "../../lib/firecapeSim/presets";
 
 interface Section {
   title: string;

@@ -3,10 +3,10 @@ import {
   worldToPx, pxToWorld,
   pickTileZoom, tileSpan, tileBaseSize, tileOrigin, tileRange, tileUrl,
   PX_PER_SQUARE, WORLD_BOUNDS, BASE_W, BASE_H,
-} from "../worldmap";
-import type { CustomMarker } from "../worldmap";
-import { ensureIcons, ensureLabels, icons, labels, tierForZoom } from "./data";
-import type { LabelDef } from "./data";
+} from "../../lib/worldmap";
+import type { CustomMarker } from "../../lib/worldmap";
+import { ensureIcons, ensureLabels, icons, labels, tierForZoom } from "../../data/mapData";
+import type { LabelDef } from "../../data/mapData";
 import { iconTypeOn, iconsOn, labelsOn, sizes, tooltipsOn } from "./prefs";
 import { overlay, repaintIconTypes } from "./overlay";
 import type { MapApi } from "./overlay";

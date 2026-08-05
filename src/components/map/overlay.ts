@@ -5,9 +5,9 @@ import {
   setSize, setTooltipsOn, sizes, tooltipsOn,
 } from "./prefs";
 import type { SizeKey } from "./prefs";
-import { namedIconTypes, unlistedIconTypes } from "./data";
+import { namedIconTypes, unlistedIconTypes } from "../../data/mapData";
 import type { SearchResult } from "./search";
-import type { CustomMarker } from "../worldmap";
+import type { CustomMarker } from "../../lib/worldmap";
 
 export interface MapApi {
   status: string;

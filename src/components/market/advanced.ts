@@ -1,8 +1,8 @@
-import { sizeFor, GATE_LABEL } from "./flip";
-import type { Candidate, Sized } from "./flip";
-import type { Settings } from "./settings";
-import { save } from "./settings";
-import { gp, count, age, duration } from "./fmt";
+import { sizeFor, GATE_LABEL } from "../../lib/market/flip";
+import type { Candidate, Sized } from "../../lib/market/flip";
+import type { Settings } from "../../lib/market/settings";
+import { save } from "../../lib/market/settings";
+import { gp, count, age, duration } from "../../lib/market/fmt";
 
 interface Row {
   c: Candidate;
