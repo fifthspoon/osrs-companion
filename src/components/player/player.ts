@@ -195,9 +195,12 @@ export function render(onChange: () => void): HTMLElement {
 
     const sg = document.createElement("ul");
     sg.className = "player__levels";
+    let anyUnknown = false;
     for (const key of SUMMARY) {
       const s = active.skills[key];
       if (!s) continue;
+      const unknown = player.isUnranked(s);
+      if (unknown) anyUnknown = true;
       const li = document.createElement("li");
       li.className = "player__level";
       const n = document.createElement("span");
@@ -205,10 +208,17 @@ export function render(onChange: () => void): HTMLElement {
       n.textContent = key.slice(0, 3);
       const v = document.createElement("b");
       v.className = "player__level-value";
-      v.textContent = String(s.level);
+      if (unknown) {
+        v.classList.add("player__level-value--unknown");
+        v.textContent = "Unknown";
+        li.title = `${key} is not ranked on the hiscores, so the level is not published. It is not level 1.`;
+      } else {
+        v.textContent = String(s.level);
+      }
       li.append(n, v);
       sg.appendChild(li);
     }
+    sg.classList.toggle("player__levels--roomy", anyUnknown);
     stats.appendChild(sg);
 
     const edit = document.createElement("button");

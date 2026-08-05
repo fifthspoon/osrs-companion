@@ -70,9 +70,17 @@ export function defaultLevels(): Record<string, number> {
   return out;
 }
 
+export function isUnranked(s: Skill | undefined): boolean {
+  return !!s && s.experience < 0;
+}
+
 export function levelsOf(c: Character): Record<string, number> {
   const out: Record<string, number> = {};
-  for (const s of SKILLS) out[s] = c.skills[s]?.level ?? (s === "hitpoints" ? 10 : 1);
+  for (const s of SKILLS) {
+    const floorLevel = s === "hitpoints" ? 10 : 1;
+    const skill = c.skills[s];
+    out[s] = !skill || isUnranked(skill) ? floorLevel : Math.max(floorLevel, skill.level);
+  }
   return out;
 }
 

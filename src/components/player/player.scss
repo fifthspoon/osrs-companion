@@ -130,6 +130,10 @@
     grid-template-columns: repeat(4, 1fr);
     gap: var(--s-xs);
     margin-top: var(--s-md);
+
+    &--roomy {
+      grid-template-columns: repeat(2, 1fr);
+    }
   }
 
   .player__level {
@@ -150,6 +154,12 @@
   .player__level-value {
     color: var(--text);
     font-weight: var(--fw-bold);
+
+    &--unknown {
+      color: var(--dim);
+      font-weight: 400;
+      cursor: help;
+    }
   }
 
   .player__roster {
