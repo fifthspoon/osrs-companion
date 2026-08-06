@@ -111,6 +111,7 @@ export function createMap(opts: MapOptions): HTMLElement {
   tip.className = "wmtip";
   tip.hidden = true;
 
+  let lastPinZoom = -1;
   let stageW = 0;
   let stageH = 0;
   const pinEls: HTMLElement[] = [];
@@ -570,8 +571,6 @@ export function createMap(opts: MapOptions): HTMLElement {
       view.offY = (stageH - h) / 2 - tl.y * view.zoom;
     }
   }
-
-  let lastPinZoom = -1;
 
   function applyTransform(force: boolean) {
     clampView();
